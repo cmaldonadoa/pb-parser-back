@@ -41,7 +41,7 @@ module.exports = {
               ? callback(err)
               : callback(
                   null,
-                  JSON.parse(buffer.toString().replaceAll("\u0000", ""))
+                  JSON.parse(buffer.toString().replace(/\u0000/g, ""))
                 )
           )
     );
