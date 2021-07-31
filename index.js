@@ -6,7 +6,7 @@ var cors = require("cors");
 var app = express();
 
 // Settings
-app.set("port", 8000);
+app.set("port", process.env.port || 8000);
 app.enable("trust proxy");
 
 // Middlewares
