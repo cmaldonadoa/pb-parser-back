@@ -22,7 +22,7 @@ module.exports = {
 
     try {
       const buffer = fs.readFileSync(rulesPath);
-      const json = JSON.parse(buffer.toString().replaceAll("\u0000", ""));
+      const json = JSON.parse(buffer.toString().replace(/\u0000/g, ""));
       json.push(rule);
       fs.writeFileSync(rulesPath, JSON.stringify(json));
       callback();
