@@ -1,0 +1,411 @@
+[
+  {
+    "name": "Posición y orientación Local",
+    "formula": "count(p0) = 1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingElementProxy"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "Name",
+            "operation": "eq",
+            "value": "Origen"
+          },
+          {
+            "on": "entity",
+            "type": "location",
+            "attribute": "x",
+            "operation": "eq",
+            "value": "0"
+          },
+          {
+            "on": "entity",
+            "type": "location",
+            "attribute": "y",
+            "operation": "eq",
+            "value": "0"
+          },
+          {
+            "on": "entity",
+            "type": "location",
+            "attribute": "z",
+            "operation": "eq",
+            "value": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Niveles del proyecto y su denominación",
+    "formula": "p0 = p1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "Name",
+            "operation": "eq",
+            "value": "\\d\\d-\\w+"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Uso correcto de las entidades",
+    "formula": "count(p0) = 1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingElementProxy"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Estructura y denominación",
+    "formula": "p3 - (p0 | p1 | p2) = empty",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "PredefinedType",
+            "operation": "eq",
+            "value": "USERDEFINED"
+          },
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "ObjectType",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "type",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "PredefinedType",
+            "operation": "neq",
+            "value": "USERDEFINED"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Sistema de Clasificación",
+    "formula": "p0",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcClassification"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "Name",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Indique el material correcto de los objetos",
+    "formula": "p0 = p1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingElement"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "pset",
+            "pset": "Pset_\\w+Common",
+            "attribute": "Material",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": ["IfcBuildingElement"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Elementos de carga",
+    "formula": "p0 = p1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcFooting",
+          "IfcMember",
+          "IfcPile",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "pset",
+            "pset": "Pset_\\w+Common",
+            "attribute": "LoadBearing",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcFooting",
+          "IfcMember",
+          "IfcPile",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Elemenos exteriores",
+    "formula": "p0 = p1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcJunctionBox",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRailing",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcShadingDevice",
+          "IfcSlab",
+          "IfcSpace",
+          "IfcSpatialZone",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow",
+          "IfcZone"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "pset",
+            "pset": "Pset_\\w+Common",
+            "attribute": "IsExternal",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcJunctionBox",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRailing",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcShadingDevice",
+          "IfcSlab",
+          "IfcSpace",
+          "IfcSpatialZone",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow",
+          "IfcZone"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Resistencia al fuego",
+    "formula": "p0 = p1",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "pset",
+            "pset": "Pset_\\w+Common",
+            "attribute": "FireRating",
+            "operation": "e"
+          }
+        ]
+      },
+      {
+        "scope": "global",
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow"
+        ],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "GlobalId",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Proyecto Específico",
+    "formula": "p0",
+    "filters": [
+      {
+        "scope": "global",
+        "entities": ["IfcZone"],
+        "constraints": [
+          {
+            "on": "entity",
+            "type": "attribute",
+            "attribute": "ObjectType",
+            "operation": "e"
+          }
+        ]
+      }
+    ]
+  }
+]
