@@ -25,6 +25,8 @@ require("./api/routes/storage")(app);
 require("./api/routes/parser")(app);
 require("./api/routes/manager")(app);
 
+app.use("/", express.static(__dirname + "/front"));
+
 app.all("*", function (req, res) {
   res.status(404).json({
     status: 404,
@@ -32,6 +34,7 @@ app.all("*", function (req, res) {
   });
 });
 // Start
+
 var server = app.listen(app.get("port"), () => {
   console.log(`[${new Date().toISOString()}] Connected on ${app.get("port")}`);
 });
