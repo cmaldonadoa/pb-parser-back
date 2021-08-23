@@ -1,29 +1,44 @@
-const fs = require("fs");
+const mysql = require("mysql2/promise");
 
-const infoPath = (uuid) => `${__dirname}/../../files/${uuid}/info.json`;
+// Connect to database
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_SCHEMA,
+});
 
 module.exports = {
-  saveInfo: (data, callback) => {
-    fs.open(infoPath(data.uuid), "w", (err, fd) =>
-      err
-        ? callback(err)
-        : fs.write(fd, data.info, (err, data) =>
-            err ? callback(err) : callback(null, data)
-          )
-    );
+  saveFile: async (data, callback) => {
+    let connection = null;
+    try {
+      connection = await pool.getConnection();
+      const [result, _] = await connection.execute(
+        "INSERT INTO `file` (`name`) VALUES (?)",
+        [data.name]
+      );
+      connection.release();
+      callback(null, result.insertId);
+    } catch (error) {
+      callback(error);
+    } finally {
+      if (connection) connection.release();
+    }
   },
-  readInfo: (data, callback) => {
-    fs.open(infoPath(data.uuid), "r", (err, fd) =>
-      err
-        ? callback(err)
-        : fs.read(fd, (err, _, buffer) =>
-            err
-              ? callback(err)
-              : callback(
-                  null,
-                  JSON.parse(buffer.toString().replace(/\u0000/g, ""))
-                )
-          )
-    );
+  getFile: async (data, callback) => {
+    let connection = null;
+    try {
+      connection = await pool.getConnection();
+      const [result, _] = await connection.execute(
+        "SELECT `name` FROM `file` WHERE `file_id` = ?",
+        [data.id]
+      );
+      connection.release();
+      callback(null, result[0]);
+    } catch (error) {
+      callback(error);
+    } finally {
+      if (connection) connection.release();
+    }
   },
 };

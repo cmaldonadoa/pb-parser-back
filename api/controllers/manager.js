@@ -1,5 +1,4 @@
 var exec = require("child_process").exec;
-const { v4: uuidv4 } = require("uuid");
 const model = require("../models/manager.js");
 
 const errorResponse = (filename, variant, error) => {
@@ -7,44 +6,57 @@ const errorResponse = (filename, variant, error) => {
   return true;
 };
 
-const TypeEnum = {
-  PSET: "pset",
-  TYPE: "type",
-  DEFAULT: "default",
-};
-
 module.exports = {
   createRule: (req, res) => {
-    const { attribute, type, meta, include, exclude, scope, name } = req.body;
-
-    const rule = {
-      type,
-      ...(type !== TypeEnum.TYPE && { attribute }),
-      ...(type === TypeEnum.PSET && { pset: meta }),
-      ...{
-        include: Array.isArray(include) ? include : include ? [include] : [],
-      },
-      ...{
-        exclude: Array.isArray(exclude) ? exclude : exclude ? [exclude] : [],
-      },
-      scope,
-      ...(scope === "space" && { name }),
-    };
-
-    model.appendRule(rule, (err) =>
+    model.createRule(req.body, (err) =>
       err
-        ? errorResponse("Rules", "Saving the file", err) &&
+        ? errorResponse("Rules", "Creating a rule", err) &&
           res.status(500).json({ status: 500 })
         : res.status(200).json({ status: 200 })
     );
   },
+  updateRule: (req, res) => {
+    const ruleId = req.params.rule;
 
-  fetchRules: (req, res) => {
-    model.readRules((err, data) =>
+    model.updateRule(ruleId, req.body, (err) =>
       err
-        ? errorResponse("Rules", "Reading the file", err) &&
+        ? errorResponse("Rules", "Updating a rule", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200 })
+    );
+  },
+  fetchRules: (req, res) => {
+    model.getRules({ groupId: parseInt(req.params.group) }, (err, data) =>
+      err
+        ? errorResponse("Rules", "Fetching all rules", err) &&
           res.status(500).json({ status: 500 })
         : res.status(200).json({ status: 200, rules: data })
+    );
+  },
+  fetchRule: (req, res) => {
+    model.getRule({ ruleId: parseInt(req.params.rule) }, (err, data) =>
+      err
+        ? errorResponse("Rules", "Fetching a rule", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, rule: data })
+    );
+  },
+  deleteRule: (req, res) => {
+    model.deleteRule(req.params.rule, (err, _) =>
+      err
+        ? errorResponse("Rules", "Fetching a rule", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200 })
+    );
+  },
+  parseFormula: (req, res) => {
+    const formula = req.body.formula;
+
+    exec(`python3 py/formula_parser.py "${formula}"`, (err, stdout, stderr) =>
+      err
+        ? errorResponse(formula, "Parsing", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, latex: stdout })
     );
   },
 };

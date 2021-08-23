@@ -263,4 +263,5 @@ cython_debug/
 
 ### Custom ###
 
-rules-*
+rules*
+*.dev.sql
