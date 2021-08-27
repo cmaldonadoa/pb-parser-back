@@ -14,7 +14,7 @@ from collider import Collider
 
 selector = Selector()
 SingleValueType = Union[str, int, float, None]
-ValueType = Union[List[SingleValueType], SingleValueType]
+ValueType = List[SingleValueType]
 
 
 class On(Enum):
@@ -222,24 +222,16 @@ class Parser:
 
     def _solve(self, op: str, arg1: SingleValueType, arg2: ValueType) -> bool:
         ops = {
-            "EQUAL": lambda a, b: a == b,
-            "NOT_EQUAL": lambda a, b: a != b,
-            "GREATER": lambda a, b: a > b,
-            "LESSER": lambda a, b: a < b,
-            "GREATER_EQUAL": lambda a, b: a >= b,
-            "LESSER_EQUAL": lambda a, b: a <= b,
+            "EQUAL": lambda a, b: any([re.search(e, str(a)) for e in b]),
+            "NOT_EQUAL": lambda a, b: any([not re.search(e, str(a)) for e in b]),
+            "GREATER": lambda a, b: any([a > e for e in b]),
+            "LESSER": lambda a, b: any([a < e for e in b]),
+            "GREATER_EQUAL": lambda a, b: any([a >= e for e in b]),
+            "LESSER_EQUAL": lambda a, b: any([a <= e for e in b]),
             "EXISTS": lambda a: bool(a),
             "NOT_EXISTS": lambda a: not bool(a),
         }
         unary = ["EXISTS", "NOT_EXISTS"]
-
-        if isinstance(arg2, list):
-            if op != "EQUAL":
-                return False
-            ops["EQUAL"] = lambda a, b: a in b
-
-        if isinstance(arg2, str):
-            ops["EQUAL"] = lambda a, b: a.lower() == b.lower()
 
         return ops[op](*(arg1,) if op in unary else (arg1, arg2))
 

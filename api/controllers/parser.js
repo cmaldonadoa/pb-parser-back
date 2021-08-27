@@ -3,11 +3,8 @@ const storage = require("../models/storage.js");
 const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
 
-const errorResponse = (filename, variant, error) =>
+const errorResponse = (filename, variant, error) => {
   console.log(`\x1b[41m[${filename}] ERROR ${variant}:\x1b[0m`, error);
-
-const consoleLog = (data) => {
-  console.log(data);
   return true;
 };
 
@@ -63,18 +60,18 @@ module.exports = {
           if (err) throw err;
           parser.getRuleMetadata({ fileId, ruleId }, (err, mapping) => {
             if (err) throw err;
-            console.log(JSON.stringify(mapping, null, 2));
             exec(
               `python3 py/data_checker.py '${row[0].formula}' '${JSON.stringify(
                 mapping
               )}'`,
               (err, stdout, stderr) => {
                 if (err) {
-                  errorResponse(fileId, "Checking", err);
+                  errorResponse(fileId, "Checking", stderr);
                   res.status(500).json({ status: 500 });
                   return;
                 }
                 results[row[0].name] = JSON.parse(stdout);
+                //!JSON.parse(stdout) && console.log(row[0].name, mapping);
                 if (Object.keys(results).length === rules.length)
                   res.status(200).json({ status: 200, data: results });
               }

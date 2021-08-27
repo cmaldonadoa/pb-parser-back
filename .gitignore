@@ -265,3 +265,4 @@ cython_debug/
 
 rules*
 *.dev.sql
+files/*

@@ -28,7 +28,7 @@ const getRule = async (data, callback) => {
   try {
     connection = await pool.getConnection();
     const [rules, _1] = await connection.execute(
-      "SELECT `rule_id`, `name`, `formula` FROM `rule` WHERE `rule_id` = ?",
+      "SELECT `name`, `formula` FROM `rule` WHERE `rule_id` = ?",
       [data.ruleId]
     );
     result.name = rules[0].name;
@@ -41,7 +41,7 @@ const getRule = async (data, callback) => {
     );
     const filtersArray = [];
 
-    for await (filter of filters) {
+    for await (const filter of filters) {
       const filterObject = { id: filter.filter_id, index: filter.index };
       filterObject.scope = !!filter.space_name ? "space" : "global";
       if (!!filter.space_name) filterObject.space = filter.space_name;
@@ -55,61 +55,65 @@ const getRule = async (data, callback) => {
       filterObject.entities = entities.map((entity) => entity.name);
 
       const constraintsArray = [];
-      const [psetConstraints, _4] = await connection.execute(
-        "SELECT `constraint_id`, `name_regexp` FROM `pset_constraint` WHERE `filter_id` = ?",
-        [filter.filter_id]
-      );
-      const [locConstraint, _5] = await connection.execute(
-        "SELECT `constraint_id` FROM `location_constraint` WHERE `filter_id` = ?",
-        [filter.filter_id]
-      );
-      const [attrConstraint, _6] = await connection.execute(
-        "SELECT `constraint_id` FROM `attribute_constraint` WHERE `filter_id` = ?",
+
+      const [constraints, _4] = await connection.execute(
+        "SELECT c.`constraint_id`, c.`operation_id`, c.`on_id`, c.`attribute`, c.`index`, r.`name` op_name, s.`name` on_name " +
+          "FROM `constraint` c " +
+          "JOIN `operation` r ON r.`operation_id` = c.`operation_id` " +
+          "JOIN `on` s ON s.`on_id` = c.`on_id` " +
+          "WHERE c.`filter_id` = ?",
         [filter.filter_id]
       );
 
-      const allConstraints = [
-        ...psetConstraints.map((c) => [
-          c,
-          { type: "pset", pset: c.name_regexp },
-        ]),
-        ...locConstraint.map((c) => [c, { type: "location" }]),
-        ...attrConstraint.map((c) => [c, { type: "attribute" }]),
-      ];
-
-      for await (const [constraint, constraintObject] of allConstraints) {
-        const [constraints, _7] = await connection.execute(
-          "SELECT c.`operation_id`, c.`on_id`, c.`attribute`, c.`index`, r.`name` op_name, s.`name` on_name " +
-            "FROM `constraint` c " +
-            "JOIN `operation` r ON r.`operation_id` = c.`operation_id` " +
-            "JOIN `on` s ON s.`on_id` = c.`on_id` " +
-            "WHERE c.`constraint_id` = ?",
+      for await (const constraint of constraints) {
+        const [psetConstraints, _4] = await connection.execute(
+          "SELECT * FROM `pset_constraint` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        constraintObject.id = constraint.constraint_id;
-        constraintObject.attribute = constraints[0].attribute;
-        constraintObject.index = constraints[0].index;
-        constraintObject.operation = constraints[0].op_name;
-        constraintObject.on = constraints[0].on_name;
+        const [locConstraint, _5] = await connection.execute(
+          "SELECT * FROM `location_constraint` WHERE `constraint_id` = ?",
+          [constraint.constraint_id]
+        );
+        const [attrConstraint, _6] = await connection.execute(
+          "SELECT * FROM `attribute_constraint` WHERE `constraint_id` = ?",
+          [constraint.constraint_id]
+        );
 
-        let values = [];
+        const thisConstraint = [
+          ...psetConstraints.map((c) => ({
+            type: "pset",
+            pset: c.name_regexp,
+          })),
+          ...locConstraint.map((c) => ({ type: "location" })),
+          ...attrConstraint.map((c) => ({ type: "attribute" })),
+        ];
+        const constraintObject = {
+          id: constraint.constraint_id,
+          attribute: constraint.attribute,
+          index: constraint.index,
+          operation: constraint.op_name,
+          on: constraint.on_name,
+          ...thisConstraint[0],
+        };
+
         const [valuesInt, _8] = await connection.execute(
           "SELECT `value` FROM `expected_value_int` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        values = [...values, ...valuesInt.map((value) => value.value)];
-
         const [valuesFloat, _9] = await connection.execute(
           "SELECT `value` FROM `expected_value_float` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        values = [...values, ...valuesFloat.map((value) => value.value)];
-
         const [valuesStr, _10] = await connection.execute(
           "SELECT `value` FROM `expected_value_string` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        values = [...values, ...valuesStr.map((value) => value.value)];
+
+        const values = [
+          ...valuesInt.map((v) => v.value),
+          ...valuesFloat.map((v) => v.value),
+          ...valuesStr.map((v) => v.value),
+        ];
 
         if (values.length > 0) constraintObject.values = values;
         constraintsArray.push(constraintObject);
@@ -175,32 +179,28 @@ class Manager {
           );
         }
       },
-      newConstraint: async (operationId, onId, attribute, index) => {
+      newConstraint: async (operationId, onId, filterId, attribute, index) => {
         const [result, _] = await this.connection.execute(
-          "INSERT INTO `constraint` (`operation_id`, `on_id`, `attribute`, `index`) VALUES (?, ?, ?, ?)",
-          [operationId, onId, attribute, index]
+          "INSERT INTO `constraint` (`operation_id`, `on_id`, `filter_id`, `attribute`, `index`) VALUES (?, ?, ?, ?, ?)",
+          [operationId, onId, filterId, attribute, index]
         );
         return result.insertId;
       },
-      newSpecificConstraint: async (
-        constraintId,
-        filterId,
-        constraintSpecification
-      ) => {
+      newSpecificConstraint: async (constraintId, constraintSpecification) => {
         if (constraintSpecification.type === "pset") {
           await this.connection.execute(
-            "INSERT INTO `pset_constraint` (`constraint_id`, `filter_id`, `name_regexp`) VALUES (?, ?, ?)",
-            [constraintId, filterId, constraintSpecification.pset]
+            "INSERT INTO `pset_constraint` (`constraint_id`, `name_regexp`) VALUES (?, ?)",
+            [constraintId, constraintSpecification.pset]
           );
         } else if (constraintSpecification.type === "location") {
           await this.connection.execute(
-            "INSERT INTO `location_constraint` (`constraint_id`, `filter_id`) VALUES (?, ?)",
-            [constraintId, filterId]
+            "INSERT INTO `location_constraint` (`constraint_id`) VALUES (?)",
+            [constraintId]
           );
         } else {
           await this.connection.execute(
-            "INSERT INTO `attribute_constraint` (`constraint_id`, `filter_id`) VALUES (?, ?)",
-            [constraintId, filterId]
+            "INSERT INTO `attribute_constraint` (`constraint_id`) VALUES (?)",
+            [constraintId]
           );
         }
       },
@@ -380,15 +380,12 @@ module.exports = {
           const constraintId = await manager.creator.newConstraint(
             operationId,
             onId,
+            filterId,
             constraint.attribute,
             constraint.index
           );
 
-          await manager.creator.newSpecificConstraint(
-            constraintId,
-            filterId,
-            constraint
-          );
+          await manager.creator.newSpecificConstraint(constraintId, constraint);
 
           !!constraint.values &&
             (await manager.creator.newExpectedValues(
@@ -459,16 +456,13 @@ module.exports = {
             constraintId = await manager.creator.newConstraint(
               operationId,
               onId,
+              filterId,
               constraint.attribute,
               constraint.index
             );
           }
 
-          await manager.creator.newSpecificConstraint(
-            constraintId,
-            filterId,
-            constraint
-          );
+          await manager.creator.newSpecificConstraint(constraintId, constraint);
 
           !!constraint.values &&
             (await manager.creator.newExpectedValues(
@@ -487,7 +481,7 @@ module.exports = {
       if (connection) connection.release();
     }
   },
-  deleteRule: async (ruleId, callback) => {
-    simpleQuery("DELETE FROM `rule` WHERE `rule_id` = ?", [ruleId], callback);
-  },
+  deleteRule: (ruleId, callback) =>
+    simpleQuery("DELETE FROM `rule` WHERE `rule_id` = ?", [ruleId], callback),
+  getGroups: (callback) => simpleQuery("SELECT * FROM `group`", [], callback),
 };

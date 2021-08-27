@@ -59,39 +59,25 @@ module.exports = {
 
     try {
       connection = await pool.getConnection();
-      const [ruleFilters, _1] = await connection.execute(
+      const [filters, _1] = await connection.execute(
         "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
         [data.ruleId]
       );
 
       const filterMap = {};
 
-      for await (const ruleFilter of ruleFilters) {
-        const [psetConstraints, _2] = await connection.execute(
-          "SELECT `constraint_id` FROM `pset_constraint` WHERE `filter_id` = ?",
-          [ruleFilter.filter_id]
+      for await (const filter of filters) {
+        const [constraints, _2] = await connection.execute(
+          "SELECT `constraint_id` FROM `constraint` WHERE `filter_id` = ?",
+          [filter.filter_id]
         );
-        const [locConstraint, _3] = await connection.execute(
-          "SELECT `constraint_id` FROM `location_constraint` WHERE `filter_id` = ?",
-          [ruleFilter.filter_id]
-        );
-        const [attrConstraint, _4] = await connection.execute(
-          "SELECT `constraint_id` FROM `attribute_constraint` WHERE `filter_id` = ?",
-          [ruleFilter.filter_id]
-        );
-
-        const constraintIds = [
-          ...psetConstraints.map((c) => c.constraint_id),
-          ...locConstraint.map((c) => c.constraint_id),
-          ...attrConstraint.map((c) => c.constraint_id),
-        ];
 
         const [values, _5] = await connection.execute(
           "SELECT m.`ifc_guid`, m.`constraint_id`, c.`attribute`, m.`value` " +
             "FROM `constraint` c " +
             "JOIN `file_metadata` m ON m.`constraint_id` = c.`constraint_id` " +
             "WHERE m.`file_id` = ? AND m.`constraint_id` IN (?)",
-          [data.fileId, constraintIds.join(",")]
+          [data.fileId, constraints.map((c) => c.constraint_id).join(",")]
         );
 
         const valuesByGuid = ((arr, property) => {
@@ -100,8 +86,6 @@ module.exports = {
             return acc;
           }, {});
         })(values, "ifc_guid");
-
-        console.log(valuesByGuid);
 
         const packets = [];
         for (const guid of Object.keys(valuesByGuid)) {
@@ -113,7 +97,7 @@ module.exports = {
           packets.push(packet);
         }
 
-        filterMap[`p${ruleFilter.index}`] = packets;
+        filterMap[`p${filter.index}`] = packets;
       }
 
       callback(null, filterMap);

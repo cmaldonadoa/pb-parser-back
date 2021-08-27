@@ -1,5 +1,4 @@
 
-from calculator import Calculator
 import sys
 import json
 
@@ -31,7 +30,7 @@ def parse_rule(d):
 
             rule.set_op(constraint["operation"])
             rule.look(constraint["attribute"])
-            rule.expect(constraint.get("value"))
+            rule.expect(constraint.get("values"))
             parser.add_rule(rule)
 
         packets = parser.search()

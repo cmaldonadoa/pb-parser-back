@@ -59,4 +59,42 @@ module.exports = {
         : res.status(200).json({ status: 200, latex: stdout })
     );
   },
+
+  createRuleMultiple: async (req, res) => {
+    const rules = req.body.rules;
+    const groupId = req.body.group;
+
+    let error = false;
+    for await (const rule of rules) {
+      rule.groupId = groupId;
+      rule.filters = rule.filters.map((f, i) => ({
+        ...f,
+        index: i,
+        constraints: f.constraints.map((c, j) => ({
+          ...c,
+          index: j,
+        })),
+      }));
+
+      await model.createRule(rule, (err) => {
+        if (err) {
+          errorResponse("Rules", "Creating a rule", err);
+          error = true;
+        }
+      });
+      if (error) break;
+    }
+
+    error
+      ? res.status(500).json({ status: 500 })
+      : res.status(200).json({ status: 200 });
+  },
+  fetchGroups: (req, res) => {
+    model.getGroups((err, data) =>
+      err
+        ? errorResponse("Rules", "Fetching groups", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, groups: data })
+    );
+  },
 };

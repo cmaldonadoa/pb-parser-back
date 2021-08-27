@@ -54,11 +54,13 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`constraint` (
   `constraint_id` INT NOT NULL AUTO_INCREMENT,
   `operation_id` INT NOT NULL,
   `on_id` INT NOT NULL,
+  `filter_id` INT NOT NULL,
   `attribute` VARCHAR(128) NOT NULL,
   `index` INT NOT NULL,
   PRIMARY KEY (`constraint_id`),
   FOREIGN KEY (`operation_id`) REFERENCES `ifc_bim`.`operation`(`operation_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`on_id`) REFERENCES `ifc_bim`.`on`(`on_id`) ON DELETE CASCADE
+  FOREIGN KEY (`on_id`) REFERENCES `ifc_bim`.`on`(`on_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`filter_id`) REFERENCES `ifc_bim`.`filter`(`filter_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`expected_value_int` (
   `expected_value_int_id` INT NOT NULL AUTO_INCREMENT,
@@ -84,27 +86,21 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`expected_value_string` (
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`pset_constraint` (
   `pset_constraint_id` INT NOT NULL AUTO_INCREMENT,
   `constraint_id` INT NOT NULL,
-  `filter_id` INT NOT NULL,
   `name_regexp` VARCHAR(128) NOT NULL,
   PRIMARY KEY (`pset_constraint_id`),
-  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`filter_id`) REFERENCES `ifc_bim`.`filter`(`filter_id`) ON DELETE CASCADE
+  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`location_constraint` (
   `location_constraint_id` INT NOT NULL AUTO_INCREMENT,
   `constraint_id` INT NOT NULL,
-  `filter_id` INT NOT NULL,
   PRIMARY KEY (`location_constraint_id`),
-  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`filter_id`) REFERENCES `ifc_bim`.`filter`(`filter_id`) ON DELETE CASCADE
+  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`attribute_constraint` (
   `attribute_constraint_id` INT NOT NULL AUTO_INCREMENT,
   `constraint_id` INT NOT NULL,
-  `filter_id` INT NOT NULL,
   PRIMARY KEY (`attribute_constraint_id`),
-  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`filter_id`) REFERENCES `ifc_bim`.`filter`(`filter_id`) ON DELETE CASCADE
+  FOREIGN KEY (`constraint_id`) REFERENCES `ifc_bim`.`constraint`(`constraint_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 /* File tables */
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`file` (

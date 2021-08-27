@@ -1,8 +1,10 @@
 var exec = require("child_process").exec;
 const model = require("../models/storage.js");
 
-const errorResponse = (filename, variant, error) =>
+const errorResponse = (filename, variant, error) => {
   console.log(`\x1b[41m[${filename}] ERROR ${variant}:\x1b[0m`, error);
+  return true;
+};
 
 module.exports = {
   upload: (req, res) => {
@@ -52,5 +54,13 @@ module.exports = {
             )
       );
     });
+  },
+  fetchFiles: (req, res) => {
+    model.getFiles((err, data) =>
+      err
+        ? errorResponse(filename, "Fetching files", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, files: data })
+    );
   },
 };

@@ -25,6 +25,19 @@ module.exports = {
       if (connection) connection.release();
     }
   },
+  getFiles: async (callback) => {
+    let connection = null;
+    try {
+      connection = await pool.getConnection();
+      const [result, _] = await connection.execute("SELECT * FROM `file`", []);
+      connection.release();
+      callback(null, result);
+    } catch (error) {
+      callback(error);
+    } finally {
+      if (connection) connection.release();
+    }
+  },
   getFile: async (data, callback) => {
     let connection = null;
     try {
