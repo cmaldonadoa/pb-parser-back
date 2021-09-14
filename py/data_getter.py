@@ -20,7 +20,7 @@ def parse_rule(d):
 
         for constraint in sorted(rfilter["constraints"], key=lambda x: x["index"]):
             rule = Rule(constraint["id"])
-            if constraint["on"] == "type":
+            if constraint["on"] == "TYPE":
                 rule.on_type()
 
             if constraint["type"] == "pset":
@@ -36,7 +36,6 @@ def parse_rule(d):
         packets = parser.search()
         rule_filters.append(packets)
 
-    #solution = Calculator.solve(formula, filter_map)
     return rule_filters
 
 
