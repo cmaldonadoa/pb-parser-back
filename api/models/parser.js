@@ -1,34 +1,25 @@
-const mysql = require("mysql2/promise");
+const SqlManager = require("./sqlmanager");
 
-// Connect to database
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_SCHEMA,
-});
+const db = new SqlManager();
 
-const simpleQuery = async (sql, data, callback) => {
-  let connection = null;
+const testConnection = async () => {
   try {
-    connection = await pool.getConnection();
-    const [rows, _] = await connection.execute(sql, data);
-    callback(null, rows);
+    await db.ping();
+    return true;
   } catch (error) {
-    callback(error);
-  } finally {
-    if (connection) connection.release();
+    console.error("Unable to connect to the database:", error);
+    return false;
   }
 };
 
 module.exports = {
   saveMetadata: async (data, callback) => {
-    let connection = null;
-
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    const t = await db.transaction();
     try {
-      connection = await pool.getConnection();
-      await connection.beginTransaction();
-
       for await (const rule of data.metadata) {
         for await (const filter of rule) {
           for await (const packet of filter) {
@@ -37,18 +28,18 @@ module.exports = {
               const constraintId = parseInt(k);
               const value = values[k];
 
-              const [oldValues, _] = await connection.execute(
+              const oldValues = await db.get(
                 "SELECT * FROM `file_metadata` WHERE `file_id` = ? AND `constraint_id` = ?",
                 [data.fileId, constraintId]
               );
 
               if (oldValues.length > 0) {
-                await connection.execute(
+                await db.update(
                   "UPDATE `file_metadata` SET `value` = ?, `ifc_guid` = ? WHERE `file_id` = ? AND `constraint_id` = ?",
                   [value, guid, data.fileId, constraintId]
                 );
               } else {
-                await connection.execute(
+                await db.insert(
                   "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `value`, `ifc_guid`) VALUES (?, ?, ?, ?)",
                   [data.fileId, constraintId, value, guid]
                 );
@@ -58,21 +49,21 @@ module.exports = {
         }
       }
 
-      await connection.commit();
+      await t.commit();
       callback(null);
     } catch (error) {
-      if (connection) await connection.rollback();
+      await t.rollback();
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
   getRuleMetadata: async (data, callback) => {
-    let connection = null;
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
 
     try {
-      connection = await pool.getConnection();
-      const [filters, _1] = await connection.execute(
+      const filters = await db.get(
         "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
         [data.ruleId]
       );
@@ -80,13 +71,13 @@ module.exports = {
       const filterMap = {};
 
       for await (const filter of filters) {
-        const [constraints, _2] = await connection.execute(
+        const constraints = await db.get(
           "SELECT `constraint_id` FROM `constraint` WHERE `filter_id` = ?",
           [filter.filter_id]
         );
 
         const constraintIds = constraints.map((c) => c.constraint_id);
-        const [values, _5] = await connection.execute(
+        const values = await db.get(
           "SELECT m.`ifc_guid`, c.`attribute`, m.`value` " +
             "FROM `file_metadata` m " +
             "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
@@ -127,8 +118,6 @@ module.exports = {
       callback(null, filterMap);
     } catch (error) {
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
 };

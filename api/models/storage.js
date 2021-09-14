@@ -1,57 +1,49 @@
-const mysql = require("mysql2/promise");
+const SqlManager = require("./sqlmanager");
 
-// Connect to database
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_SCHEMA,
-});
+const db = new SqlManager();
+
+const testConnection = async () => {
+  try {
+    await db.ping();
+    return true;
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+    return false;
+  }
+};
 
 module.exports = {
   saveFile: async (data, callback) => {
-    let connection = null;
-    try {
-      connection = await pool.getConnection();
-      const [result, _] = await connection.execute(
-        "INSERT INTO `file` (`name`) VALUES (?)",
-        [data.name]
-      );
-      connection.release();
-      callback(null, result.insertId);
-    } catch (error) {
-      callback(error);
-    } finally {
-      if (connection) connection.release();
+    if (!testConnection()) {
+      callback(true);
+      return;
     }
-  },
-  getFiles: async (callback) => {
-    let connection = null;
     try {
-      connection = await pool.getConnection();
-      const [result, _] = await connection.execute("SELECT * FROM `file`", []);
-      connection.release();
+      const result = await db.insert("INSERT INTO `file` (`name`) VALUES (?)", [
+        data.name,
+      ]);
       callback(null, result);
     } catch (error) {
       callback(error);
-    } finally {
-      if (connection) connection.release();
+    }
+  },
+  getFiles: async (callback) => {
+    try {
+      const result = await db.get("SELECT * FROM `file`", []);
+      callback(null, result);
+    } catch (error) {
+      callback(error);
     }
   },
   getFile: async (data, callback) => {
-    let connection = null;
     try {
-      connection = await pool.getConnection();
-      const [result, _] = await connection.execute(
+      const result = await db.get(
         "SELECT `name` FROM `file` WHERE `file_id` = ?",
         [data.id]
       );
-      connection.release();
       callback(null, result[0]);
     } catch (error) {
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
 };

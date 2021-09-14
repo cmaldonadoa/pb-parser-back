@@ -1,33 +1,21 @@
-const mysql = require("mysql2/promise");
+const SqlManager = require("./sqlmanager");
 
-// Connect to database
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_SCHEMA,
-});
+const db = new SqlManager();
 
-const simpleQuery = async (sql, data, callback) => {
-  let connection = null;
+const testConnection = async () => {
   try {
-    connection = await pool.getConnection();
-    const [rows, _] = await connection.execute(sql, data);
-    callback(null, rows);
+    await db.ping();
+    return true;
   } catch (error) {
-    callback(error);
-  } finally {
-    if (connection) connection.release();
+    console.error("Unable to connect to the database:", error);
+    return false;
   }
 };
 
 const getRule = async (data, callback) => {
   let result = {};
-  let connection = null;
-
   try {
-    connection = await pool.getConnection();
-    const [rules, _1] = await connection.execute(
+    const rules = await db.get(
       "SELECT `name`, `formula` FROM `rule` WHERE `rule_id` = ?",
       [data.ruleId]
     );
@@ -35,7 +23,7 @@ const getRule = async (data, callback) => {
     result.formula = rules[0].formula;
     result.id = data.ruleId;
 
-    const [filters, _2] = await connection.execute(
+    const filters = await db.get(
       "SELECT `filter_id`, `index`, `space_name` FROM `filter` WHERE `rule_id` = ?",
       [data.ruleId]
     );
@@ -46,7 +34,7 @@ const getRule = async (data, callback) => {
       filterObject.scope = !!filter.space_name ? "space" : "global";
       if (!!filter.space_name) filterObject.space = filter.space_name;
 
-      const [entities, _3] = await connection.execute(
+      const entities = await db.get(
         "SELECT e.`name` FROM `entity` e " +
           "JOIN `filter_entity` r ON e.`entity_id` = r.`entity_id` " +
           "WHERE r.`filter_id` = ?",
@@ -56,7 +44,7 @@ const getRule = async (data, callback) => {
 
       const constraintsArray = [];
 
-      const [constraints, _4] = await connection.execute(
+      const constraints = await db.get(
         "SELECT c.`constraint_id`, c.`operation_id`, c.`on_id`, c.`attribute`, c.`index`, r.`name` op_name, s.`name` on_name " +
           "FROM `constraint` c " +
           "JOIN `operation` r ON r.`operation_id` = c.`operation_id` " +
@@ -66,15 +54,15 @@ const getRule = async (data, callback) => {
       );
 
       for await (const constraint of constraints) {
-        const [psetConstraints, _4] = await connection.execute(
+        const psetConstraints = await db.get(
           "SELECT * FROM `pset_constraint` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        const [locConstraint, _5] = await connection.execute(
+        const locConstraint = await db.get(
           "SELECT * FROM `location_constraint` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        const [attrConstraint, _6] = await connection.execute(
+        const attrConstraint = await db.get(
           "SELECT * FROM `attribute_constraint` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
@@ -96,15 +84,15 @@ const getRule = async (data, callback) => {
           ...thisConstraint[0],
         };
 
-        const [valuesInt, _8] = await connection.execute(
+        const valuesInt = await db.get(
           "SELECT `value` FROM `expected_value_int` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        const [valuesFloat, _9] = await connection.execute(
+        const valuesFloat = await db.get(
           "SELECT `value` FROM `expected_value_float` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
-        const [valuesStr, _10] = await connection.execute(
+        const valuesStr = await db.get(
           "SELECT `value` FROM `expected_value_string` WHERE `constraint_id` = ?",
           [constraint.constraint_id]
         );
@@ -127,78 +115,76 @@ const getRule = async (data, callback) => {
     callback(null, result);
   } catch (error) {
     callback(error);
-  } finally {
-    if (connection) connection.release();
   }
 };
 
 class Manager {
-  constructor(connection) {
-    this.connection = connection;
+  constructor(sqlManager) {
+    this.sqlManager = sqlManager;
     this.creator = {
       newRule: async (name, formula) => {
-        const [result, _] = await this.connection.execute(
+        const result = await this.sqlManager.insert(
           "INSERT INTO `rule` (`name`, `formula`) VALUES (?, ?)",
           [name, formula]
         );
-        return result.insertId;
+        return result;
       },
       linkRuleGroup: async (ruleId, groupId) => {
-        await this.connection.execute(
+        await this.sqlManager.insert(
           "INSERT INTO `rule_group` (`rule_id`, `group_id`) VALUES (?, ?)",
           [ruleId, groupId]
         );
       },
       newFilter: async (ruleId, spaceName, index) => {
-        const [result, _] = await this.connection.execute(
+        const result = await this.sqlManager.insert(
           "INSERT INTO `filter` (`rule_id`, `space_name`, `index`) VALUES (?, ?, ?)",
           [ruleId, spaceName, index]
         );
-        return result.insertId;
+        return result;
       },
       linkFilterEntities: async (filterId, entitiesList) => {
         for await (const entity of entitiesList) {
           let entityId = null;
-          const [entities, _3] = await this.connection.execute(
+          const entities = await this.sqlManager.get(
             "SELECT `entity_id` FROM `entity` WHERE `name` = ?",
             [entity]
           );
           if (entities.length > 0) {
             entityId = entities[0].entity_id;
           } else {
-            const [result3, _4] = await this.connection.execute(
+            const result3 = await this.sqlManager.insert(
               "INSERT INTO `entity` (`name`) VALUES (?)",
               [entity]
             );
-            entityId = result3.insertId;
+            entityId = result3;
           }
 
-          await this.connection.execute(
+          await this.sqlManager.insert(
             "INSERT INTO `filter_entity` (`filter_id`, `entity_id`) VALUES (?, ?)",
             [filterId, entityId]
           );
         }
       },
       newConstraint: async (operationId, onId, filterId, attribute, index) => {
-        const [result, _] = await this.connection.execute(
+        const result = await this.sqlManager.insert(
           "INSERT INTO `constraint` (`operation_id`, `on_id`, `filter_id`, `attribute`, `index`) VALUES (?, ?, ?, ?, ?)",
           [operationId, onId, filterId, attribute, index]
         );
-        return result.insertId;
+        return result;
       },
       newSpecificConstraint: async (constraintId, constraintSpecification) => {
         if (constraintSpecification.type === "pset") {
-          await this.connection.execute(
+          await this.sqlManager.insert(
             "INSERT INTO `pset_constraint` (`constraint_id`, `name_regexp`) VALUES (?, ?)",
             [constraintId, constraintSpecification.pset]
           );
         } else if (constraintSpecification.type === "location") {
-          await this.connection.execute(
+          await this.sqlManager.insert(
             "INSERT INTO `location_constraint` (`constraint_id`) VALUES (?)",
             [constraintId]
           );
         } else {
-          await this.connection.execute(
+          await this.sqlManager.insert(
             "INSERT INTO `attribute_constraint` (`constraint_id`) VALUES (?)",
             [constraintId]
           );
@@ -207,17 +193,17 @@ class Manager {
       newExpectedValues: async (valuesList, constraintId) => {
         for await (const value of valuesList) {
           if (/^\d+$/.test(value)) {
-            await this.connection.execute(
+            await this.sqlManager.insert(
               "INSERT INTO `expected_value_int` (`constraint_id`, `value`) VALUES (?, ?)",
               [constraintId, parseInt(value)]
             );
           } else if (/^\d+\.\d+$/.test(value)) {
-            await this.connection.execute(
+            await this.sqlManager.insert(
               "INSERT INTO `expected_value_float` (`constraint_id`, `value`) VALUES (?, ?)",
               [constraintId, parseFloat(value)]
             );
           } else {
-            await this.connection.execute(
+            await this.sqlManager.insert(
               "INSERT INTO `expected_value_string` (`constraint_id`, `value`) VALUES (?, ?)",
               [constraintId, value]
             );
@@ -227,7 +213,7 @@ class Manager {
     };
     this.getter = {
       getOperation: async (name) => {
-        const [operations, _5] = await this.connection.execute(
+        const operations = await this.sqlManager.get(
           "SELECT `operation_id` FROM `operation` WHERE `name` = ?",
           [name]
         );
@@ -238,7 +224,7 @@ class Manager {
         }
       },
       getOn: async (name) => {
-        const [ons, _6] = await this.connection.execute(
+        const ons = await this.sqlManager.get(
           "SELECT `on_id` FROM `on` WHERE `name` = ?",
           [name]
         );
@@ -251,13 +237,13 @@ class Manager {
     };
     this.updater = {
       updateRule: async (ruleId, name, formula) => {
-        await this.connection.execute(
+        await this.sqlManager.update(
           "UPDATE `rule` SET `name` = ?, `formula` = ?  WHERE `rule_id` = ?",
           [name, formula, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, spaceName, index) => {
-        await this.connection.execute(
+        await this.sqlManager.update(
           "UPDATE `filter` SET `space_name` = ?, `index` = ? WHERE `filter_id` = ? AND `rule_id` = ?",
           [spaceName, index, filterId, ruleId]
         );
@@ -269,7 +255,7 @@ class Manager {
         attribute,
         index
       ) => {
-        await this.connection.execute(
+        await this.sqlManager.update(
           "UPDATE `constraint` SET `operation_id` = ?, `on_id` = ?, `attribute` = ?, `index` = ? WHERE `constraint_id` = ?",
           [operationId, onId, attribute, index, constraintId]
         );
@@ -277,35 +263,35 @@ class Manager {
     };
     this.deleter = {
       unlinkFilterEntities: async (filterId) => {
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `filter_entity` WHERE `filter_id` = ?",
           [filterId]
         );
       },
       deleteSpecificConstraint: async (constraintId) => {
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `pset_constraint` WHERE `constraint_id` = ?",
           [constraintId]
         );
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `attribute_constraint` WHERE `constraint_id` = ?",
           [constraintId]
         );
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `location_constraint` WHERE `constraint_id` = ?",
           [constraintId]
         );
       },
       deleteExpectedValues: async (constraintId) => {
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `expected_value_int` WHERE `constraint_id` = ?",
           [constraintId]
         );
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `expected_value_float` WHERE `constraint_id` = ?",
           [constraintId]
         );
-        await this.connection.execute(
+        await this.sqlManager.delete(
           "DELETE FROM `expected_value_string` WHERE `constraint_id` = ?",
           [constraintId]
         );
@@ -316,10 +302,12 @@ class Manager {
 
 module.exports = {
   getAllRules: async (data, callback) => {
-    let connection = null;
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
     try {
-      connection = await pool.getConnection();
-      const [rules, _] = await connection.execute(
+      const rules = await db.get(
         "SELECT g.`rule_id` FROM `rule` r JOIN `rule_group` g ON r.`rule_id` = g.`rule_id` WHERE g.`group_id` = ?",
         [data.groupId]
       );
@@ -333,31 +321,55 @@ module.exports = {
       callback(null, allRules);
     } catch (error) {
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
-  getRules: (data, callback) =>
-    simpleQuery(
-      "SELECT g.`rule_id`, r.`name` FROM `rule` r JOIN `rule_group` g ON r.`rule_id` = g.`rule_id` WHERE g.`group_id` = ?",
-      [data.groupId],
-      callback
-    ),
-  getRuleBasicInfo: (data, callback) =>
-    simpleQuery(
-      "SELECT `formula`, `name` FROM `rule` WHERE `rule_id` = ?",
-      [data.ruleId],
-      callback
-    ),
-  getRule: getRule,
+  getRules: async (data, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    try {
+      const rows = await db.get(
+        "SELECT g.`rule_id`, r.`name` FROM `rule` r JOIN `rule_group` g ON r.`rule_id` = g.`rule_id` WHERE g.`group_id` = ?",
+        [data.groupId]
+      );
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getRuleBasicInfo: async (data, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    try {
+      const rows = await db.get(
+        "SELECT `formula`, `name` FROM `rule` WHERE `rule_id` = ?",
+        [data.ruleId]
+      );
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getRule: (data, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    return getRule(data, callback);
+  },
   createRule: async (data, callback) => {
-    let connection = null;
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    const t = await db.transaction();
+    const manager = new Manager(db);
 
     try {
-      connection = await pool.getConnection();
-      const manager = new Manager(connection);
-      await connection.beginTransaction();
-
       const ruleId = await manager.creator.newRule(data.name, data.formula);
 
       await manager.creator.linkRuleGroup(ruleId, data.groupId);
@@ -395,23 +407,23 @@ module.exports = {
         }
       }
 
-      await connection.commit();
+      await t.commit();
       callback(null);
     } catch (error) {
-      if (connection) await connection.rollback();
+      await t.rollback();
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
   updateRule: async (ruleId, data, callback) => {
-    let connection = null;
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    const t = await db.transaction();
+    const manager = new Manager(db);
 
     try {
-      connection = await pool.getConnection();
-      const manager = new Manager(connection);
-      await connection.beginTransaction();
-
       await manager.updater.updateRule(ruleId, data.name, data.formula);
 
       for await (const filter of data.filters) {
@@ -472,16 +484,37 @@ module.exports = {
         }
       }
 
-      await connection.commit();
+      await t.commit();
       callback(null);
     } catch (error) {
-      if (connection) await connection.rollback();
+      await t.rollback();
       callback(error);
-    } finally {
-      if (connection) connection.release();
     }
   },
-  deleteRule: (ruleId, callback) =>
-    simpleQuery("DELETE FROM `rule` WHERE `rule_id` = ?", [ruleId], callback),
-  getGroups: (callback) => simpleQuery("SELECT * FROM `group`", [], callback),
+  deleteRule: async (ruleId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    try {
+      const rows = await db.get("DELETE FROM `rule` WHERE `rule_id` = ?", [
+        ruleId,
+      ]);
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getGroups: async (callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+    try {
+      const rows = await db.get("SELECT * FROM `group`", []);
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
 };
