@@ -71,7 +71,6 @@ module.exports = {
                   return;
                 }
                 results[row[0].name] = JSON.parse(stdout);
-                //!JSON.parse(stdout) && console.log(row[0].name, mapping);
                 if (Object.keys(results).length === rules.length)
                   res.status(200).json({ status: 200, data: results });
               }
