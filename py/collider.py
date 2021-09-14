@@ -1,12 +1,15 @@
+import enum
 import ifcopenshell
 import ifcopenshell.geom as geom
 import trimesh
+import trimesh.collision
+import math
 
 settings = ifcopenshell.geom.settings()
 settings.set(settings.USE_WORLD_COORDS, True)
 
 
-def create_mesh(entity):
+def _create_mesh(entity):
     shape = geom.create_shape(settings, entity)
     verts = shape.geometry.verts
     faces = shape.geometry.faces
@@ -19,19 +22,35 @@ def create_mesh(entity):
     for i in range(0, int(len(faces)), 3):
         tm_faces.append([faces[i], faces[i+1], faces[i+2]])
 
-    return trimesh.Trimesh(vertices=tm_verts, faces=tm_faces, process=False)
+    return trimesh.Trimesh(vertices=tm_verts, faces=tm_faces, process=False, metadata={"guid": entity.GlobalId})
 
 
 class Collider:
     def __init__(self):
         self.manager = trimesh.collision.CollisionManager()
+        self.meshes = []
 
     def add(self, *ifc_objects):
         for entity in ifc_objects:
-            mesh = create_mesh(entity)
+            mesh = _create_mesh(entity)
+            self.meshes.append(mesh)
             self.manager.add_object(entity.GlobalId, mesh)
         return self
 
-    def check(self, ifc_object):
-        mesh = create_mesh(ifc_object)
+    def contained_in(self, entity):
+        mesh = _create_mesh(entity)
+        collisions = set()
+        for other_mesh in self.meshes:
+            contains = mesh.contains(other_mesh.vertices)
+            if any(contains):
+                collisions.add(other_mesh.metadata["guid"])
+
+        if len(collisions) > 0:
+            return (True, collisions)
         return self.manager.in_collision_single(mesh, return_names=True)
+
+    def get_min_distance(self):
+        return self.manager.min_distance_internal()
+
+    def get_distance(self, i, j):
+        return math.dist(self.meshes[i], self.meshes[j])
