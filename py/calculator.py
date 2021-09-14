@@ -65,7 +65,22 @@ class Attribute(ISolver):
         return f"\\text{{{self.attribute}}}"
 
     def solve(self, literal_map):
-        return [p[self.attribute] for p in literal_map[self.p]]
+        return [p.get_value(self.attribute) for p in literal_map[self.p]]
+
+
+class AttributeList(ISolver):
+    def __init__(self, p, attributes):
+        self.p = p
+        self.attributes = attributes
+
+    def __repr__(self):
+        return f"\\text{{{self.attribute}}}"
+
+    def solve(self, literal_map):
+        result = dict()
+        for attribute in self.attributes:
+            result[attribute] = [p.get_value(self.attribute) for p in literal_map[self.p]]
+        return result
 
 
 class InNumber(ISolver):
@@ -380,6 +395,10 @@ class Calculator:
         if re.search('^\w+$', string):
             return Attribute(set_name, string)
 
+        # CASE ATTRIBUTE LIST
+        if re.search('^\w+(,\s\w+)*$', string):
+            return AttributeList(set_name, string.split(", "))
+
         # CASE INTERNAL OPERATION
         return Calculator._parse_internal_op(set_name, string)
 
@@ -506,10 +525,11 @@ class Calculator:
                                 arg2 = Calculator._parse_formula(partial1 + op_str + partial2)
                                 arg1 = op_class(arg1, arg2)
                                 arg2 = None
-                                partial1 = None
-                                partial2 = None
                             else:
                                 arg1 = Calculator._parse_formula(partial1 + op_str + partial2)
+
+                            partial1 = None
+                            partial2 = None
 
                         else:
                             partial1 = arg
