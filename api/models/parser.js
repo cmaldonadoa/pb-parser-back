@@ -36,10 +36,23 @@ module.exports = {
             for await (const k of Object.keys(values)) {
               const constraintId = parseInt(k);
               const value = values[k];
-              await connection.execute(
-                "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `value`, `ifc_guid`) VALUES (?, ?, ?, ?)",
-                [data.fileId, constraintId, value, guid]
+
+              const [oldValues, _] = await connection.execute(
+                "SELECT * FROM `file_metadata` WHERE `file_id` = ? AND `constraint_id` = ?",
+                [data.fileId, constraintId]
               );
+
+              if (oldValues.length > 0) {
+                await connection.execute(
+                  "UPDATE `file_metadata` SET `value` = ?, `ifc_guid` = ? WHERE `file_id` = ? AND `constraint_id` = ?",
+                  [value, guid, data.fileId, constraintId]
+                );
+              } else {
+                await connection.execute(
+                  "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `value`, `ifc_guid`) VALUES (?, ?, ?, ?)",
+                  [data.fileId, constraintId, value, guid]
+                );
+              }
             }
           }
         }
@@ -72,20 +85,31 @@ module.exports = {
           [filter.filter_id]
         );
 
+        const constraintIds = constraints.map((c) => c.constraint_id);
         const [values, _5] = await connection.execute(
-          "SELECT m.`ifc_guid`, m.`constraint_id`, c.`attribute`, m.`value` " +
-            "FROM `constraint` c " +
-            "JOIN `file_metadata` m ON m.`constraint_id` = c.`constraint_id` " +
-            "WHERE m.`file_id` = ? AND m.`constraint_id` IN (?)",
-          [data.fileId, constraints.map((c) => c.constraint_id).join(",")]
+          "SELECT m.`ifc_guid`, c.`attribute`, m.`value` " +
+            "FROM `file_metadata` m " +
+            "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
+            "WHERE m.`file_id` = ? AND m.`constraint_id` IN " +
+            `(${constraintIds.map((e) => "?").join()})`,
+          [data.fileId, ...constraintIds]
         );
+
+        const typedValues = values.map((v) => ({
+          ...v,
+          value: /\d+/.test(v.value)
+            ? parseInt(v.value)
+            : /\d+\.\d+/.test(v.value)
+            ? parseFloat(v.value)
+            : v.value,
+        }));
 
         const valuesByGuid = ((arr, property) => {
           return arr.reduce((acc, cur) => {
             acc[cur[property]] = [...(acc[cur[property]] || []), cur];
             return acc;
           }, {});
-        })(values, "ifc_guid");
+        })(typedValues, "ifc_guid");
 
         const packets = [];
         for (const guid of Object.keys(valuesByGuid)) {
