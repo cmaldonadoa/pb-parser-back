@@ -173,7 +173,7 @@ class Parser:
                         return []
 
                     def func1(element, ifc_element): return self._search_pset_entity(
-                        rule.id, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.ENTITY else self._search_pset(
+                        rule.id, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.ENTITY else self._search_pset_type(
                         rule.id, ifc_element, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.TYPE else self._search_location(
                             rule.id, element, rule.attribute, rule.value, rule.op) if rule.mode == Mode.LOCATION else self._search_default(
                             rule.id, ifc_element, element, rule.attribute, rule.value, rule.op)
