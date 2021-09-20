@@ -29,14 +29,16 @@ class SqlManager {
     );
   }
 
-  insert(qry, vals) {
-    return this._sequelize.query(
-      {
-        query: qry,
-        values: vals,
-      },
-      { type: QueryTypes.INSERT }
-    )[0];
+  async insert(qry, vals) {
+    return this._sequelize
+      .query(
+        {
+          query: qry,
+          values: vals,
+        },
+        { type: QueryTypes.INSERT }
+      )
+      .then((res) => res[0]);
   }
 
   update(qry, vals) {
