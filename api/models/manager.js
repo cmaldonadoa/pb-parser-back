@@ -152,11 +152,11 @@ class Manager {
           if (entities.length > 0) {
             entityId = entities[0].entity_id;
           } else {
-            const result3 = await this.sqlManager.insert(
+            const result = await this.sqlManager.insert(
               "INSERT INTO `entity` (`name`) VALUES (?)",
               [entity]
             );
-            entityId = result3;
+            entityId = result;
           }
 
           await this.sqlManager.insert(

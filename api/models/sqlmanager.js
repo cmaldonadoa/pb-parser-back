@@ -36,7 +36,7 @@ class SqlManager {
         values: vals,
       },
       { type: QueryTypes.INSERT }
-    );
+    )[0];
   }
 
   update(qry, vals) {
