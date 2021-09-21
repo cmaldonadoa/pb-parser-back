@@ -14,18 +14,20 @@ module.exports = {
     const groupId = parseInt(req.body.group_id);
     const path = `${__dirname}/../../files/${fileId}`;
 
-    manager.getAllRules({ groupId }, (err, rules) =>
+    storage.getFileWithType({ id: fileId }, (err, info) =>
       err
-        ? errorResponse(fileId, "Reading rules", err) &&
+        ? errorResponse(fileId, "Reading info", err) &&
           res.status(500).json({ status: 500 })
-        : storage.getFile({ id: fileId }, (err, info) =>
+        : manager.getRulesByGroupFull(groupId, (err, rules) =>
             err
-              ? errorResponse(fileId, "Reading info", err) &&
+              ? errorResponse(fileId, "Reading rules", err) &&
                 res.status(500).json({ status: 500 })
               : exec(
                   `python3 py/data_getter.py '${path}/${
-                    info.name
-                  }.ifc' '${JSON.stringify(rules)}'`,
+                    info.file.name
+                  }.ifc' '${JSON.stringify(
+                    rules.filter((e) => e.modelTypes.indexOf(info.type) >= 0)
+                  )}'`,
                   (err, stdout, stderr) =>
                     err
                       ? errorResponse(fileId, "Parsing", err) &&
@@ -50,13 +52,13 @@ module.exports = {
       const results = {};
 
       let rules = [];
-      await manager.getRules({ groupId }, (err, result) => {
+      await manager.getRulesByGroupHeader(groupId, (err, result) => {
         if (err) throw err;
         rules = result.map((r) => r.rule_id);
       });
 
       for await (const ruleId of rules) {
-        await manager.getRuleBasicInfo({ ruleId }, (err, row) => {
+        await manager.getRuleHeader(ruleId, (err, row) => {
           if (err) throw err;
           parser.getRuleMetadata({ fileId, ruleId }, (err, mapping) => {
             if (err) throw err;
