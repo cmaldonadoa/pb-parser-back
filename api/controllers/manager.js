@@ -26,7 +26,7 @@ module.exports = {
     );
   },
   fetchRules: (req, res) => {
-    model.getRules({ groupId: parseInt(req.params.group) }, (err, data) =>
+    model.getRulesByGroupHeader(parseInt(req.params.group), (err, data) =>
       err
         ? errorResponse("Rules", "Fetching all rules", err) &&
           res.status(500).json({ status: 500 })
@@ -34,7 +34,7 @@ module.exports = {
     );
   },
   fetchRule: (req, res) => {
-    model.getRule({ ruleId: parseInt(req.params.rule) }, (err, data) =>
+    model.getRuleFull(parseInt(req.params.rule), (err, data) =>
       err
         ? errorResponse("Rules", "Fetching a rule", err) &&
           res.status(500).json({ status: 500 })
