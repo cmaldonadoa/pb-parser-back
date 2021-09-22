@@ -31,20 +31,11 @@ class Manager {
       },
       linkRuleModelTypes: async (ruleId, modelTypesList) => {
         for await (const modelType of modelTypesList) {
-          let modelTypeId = null;
-          const modelTypes = await this.sqlManager.get(
-            "SELECT `model_type_id` FROM `model_type` WHERE `name` = ?",
-            [modelType]
-          );
-          if (modelTypes.length > 0) {
-            modelTypeId = modelTypes[0].model_type_id;
-          } else {
-            const result = await this.sqlManager.insert(
-              "INSERT INTO `model_type` (`name`) VALUES (?)",
-              [modelType]
-            );
-            modelTypeId = result;
-          }
+          const modelTypeId = await this.sqlManager
+            .get("SELECT `model_type_id` FROM `model_type` WHERE `name` = ?", [
+              modelType,
+            ])
+            .then((res) => res[0].model_type_id);
 
           await this.sqlManager.insert(
             "INSERT INTO `rule_model_type` (`rule_id`, `model_type_id`) VALUES (?, ?)",
@@ -54,7 +45,7 @@ class Manager {
       },
       newFilter: async (ruleId, index) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `filter` (`rule_id`, `index`) VALUES (?, ?, ?)",
+          "INSERT INTO `filter` (`rule_id`, `index`) VALUES (?, ?)",
           [ruleId, index]
         );
         return result;
@@ -132,22 +123,10 @@ class Manager {
       },
       newExpectedValues: async (valuesList, constraintId) => {
         for await (const value of valuesList) {
-          if (/^\d+$/.test(value)) {
-            await this.sqlManager.insert(
-              "INSERT INTO `expected_value_int` (`constraint_id`, `value`) VALUES (?, ?)",
-              [constraintId, parseInt(value)]
-            );
-          } else if (/^\d+\.\d+$/.test(value)) {
-            await this.sqlManager.insert(
-              "INSERT INTO `expected_value_float` (`constraint_id`, `value`) VALUES (?, ?)",
-              [constraintId, parseFloat(value)]
-            );
-          } else {
-            await this.sqlManager.insert(
-              "INSERT INTO `expected_value_string` (`constraint_id`, `value`) VALUES (?, ?)",
-              [constraintId, value]
-            );
-          }
+          await this.sqlManager.insert(
+            "INSERT INTO `expected_value` (`constraint_id`, `value`) VALUES (?, ?)",
+            [constraintId, value.toString()]
+          );
         }
       },
     };
