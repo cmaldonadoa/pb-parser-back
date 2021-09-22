@@ -230,6 +230,13 @@ VALUES
   ("TYPE");
 
 INSERT INTO
+  `ifc_bim`.`group`(`name`)
+VALUES
+  ("MEI"),
+  ("DS19"),
+  ("Normativas");
+
+INSERT INTO
   `ifc_bim`.`model_type`(`name`)
 VALUES
   ("ARQUITECTURA"),
