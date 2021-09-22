@@ -1,3 +1,5 @@
+DROP DATABASE IF EXISTS `ifc_bim`;
+
 CREATE DATABASE IF NOT EXISTS `ifc_bim` DEFAULT CHARACTER SET utf8;
 
 /* Rule tables */
@@ -70,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`filter_space` (
   `space_id` INT NOT NULL,
   PRIMARY KEY (`filter_id`, `space_id`),
   FOREIGN KEY (`filter_id`) REFERENCES `ifc_bim`.`filter`(`filter_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`space_id`) REFERENCES `ifc_bim`.`space`(`space_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`space_id`) REFERENCES `ifc_bim`.`space`(`space_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 /* Constraint tables */
@@ -168,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`commune` (
   `region_id` INT NOT NULL,
   `name` VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY (`commune_id`),
-  FOREIGN KEY (`region_id`) REFERENCES `ifc_bim`.`region`(`region_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`region_id`) REFERENCES `ifc_bim`.`region`(`region_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `ifc_bim`.`tender` (
@@ -181,7 +183,7 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`tender_group` (
   `group_id` INT NOT NULL,
   PRIMARY KEY (`tender_id`, `group_id`),
   FOREIGN KEY (`tender_id`) REFERENCES `ifc_bim`.`tender`(`tender_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`group_id`) REFERENCES `ifc_bim`.`group`(`group_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`group_id`) REFERENCES `ifc_bim`.`group`(`group_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 /* User tables */
@@ -196,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`user` (
   `region_id` INT NULL DEFAULT NULL,
   `username` VARCHAR(128) NOT NULL UNIQUE,
   `password` VARCHAR(128) NOT NULL,
-  PRIMARY KEY (`role_id`),
+  PRIMARY KEY (`user_id`),
   FOREIGN KEY (`region_id`) REFERENCES `ifc_bim`.`region`(`region_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
@@ -205,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `ifc_bim`.`user_role` (
   `role_id` INT NOT NULL,
   PRIMARY KEY (`user_id`, `role_id`),
   FOREIGN KEY (`user_id`) REFERENCES `ifc_bim`.`user`(`user_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`role_id`) REFERENCES `ifc_bim`.`role`(`role_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`role_id`) REFERENCES `ifc_bim`.`role`(`role_id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 /* Constants */
