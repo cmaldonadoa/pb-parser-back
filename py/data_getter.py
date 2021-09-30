@@ -11,12 +11,10 @@ rules = json.loads(sys.argv[2])
 def parse_rule(d):
     rule_filters = []
 
-    for i, rfilter in enumerate(d["filters"]):
+    for rfilter in d["filters"]:
         parser = Parser(file_path)
         parser.include(*rfilter["entities"])
-
-        if rfilter["scope"] == "space":
-            parser.on_space(rfilter["space"])
+        parser.on_spaces(rfilter["space"])
 
         for constraint in sorted(rfilter["constraints"], key=lambda x: x["index"]):
             rule = Rule(constraint["id"])
