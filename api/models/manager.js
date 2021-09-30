@@ -2,16 +2,6 @@ const SqlManager = require("./sqlmanager");
 
 const db = new SqlManager();
 
-const testConnection = async () => {
-  try {
-    await db.ping();
-    return true;
-  } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
-  }
-};
-
 class Manager {
   constructor(sqlManager) {
     this.sqlManager = sqlManager;
@@ -173,7 +163,7 @@ class Manager {
       },
       getFilters: async (ruleId) => {
         const result = await this.sqlManager.get(
-          "SELECT `filter_id`, `index`, `space_name` FROM `filter` WHERE `rule_id` = ?",
+          "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
           [ruleId]
         );
         return result;
@@ -310,18 +300,29 @@ class Manager {
   }
 }
 
-const getRule = async (data, callback) => {
-  const result = { id: data.ruleId };
-  const manager = new Manager(db);
+const testConnection = async () => {
   try {
-    const rule = await manager.getter.getRule(data.ruleId);
+    await db.ping();
+    return true;
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+    return false;
+  }
+};
+
+const manager = new Manager(db);
+
+const getRule = async (ruleId, callback) => {
+  const result = { id: ruleId };
+  try {
+    const rule = await manager.getter.getRule(ruleId);
     result.name = rule.name;
     result.formula = rule.formula;
 
-    const modelTypes = await manager.getter.getModelTypes(data.ruleId);
+    const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
 
-    const filters = await manager.getter.getFilters(data.ruleId);
+    const filters = await manager.getter.getFilters(ruleId);
     const filtersArray = [];
 
     for await (const filter of filters) {
@@ -389,12 +390,11 @@ module.exports = {
       return;
     }
 
-    const manager = new Manager(db);
     try {
       const rules = await manager.getter.getRulesByGroup(groupId);
       const allRules = [];
       for await (const rule of rules) {
-        await getRule({ ruleId: rule.rule_id }, (err, result) => {
+        await getRule(rule.rule_id, (err, result) => {
           if (err) throw err;
           allRules.push(result);
         });
@@ -422,7 +422,6 @@ module.exports = {
       return;
     }
 
-    const manager = new Manager(db);
     try {
       const rows = await manager.getter.getRule(ruleId);
       callback(null, rows);
@@ -430,12 +429,12 @@ module.exports = {
       callback(error);
     }
   },
-  getRuleFull: (data, callback) => {
+  getRuleFull: (ruleId, callback) => {
     if (!testConnection()) {
       callback(true);
       return;
     }
-    return getRule(data, callback);
+    return getRule(ruleId, callback);
   },
   createRule: async (data, callback) => {
     if (!testConnection()) {
@@ -444,7 +443,6 @@ module.exports = {
     }
 
     const t = await db.transaction();
-    const manager = new Manager(db);
 
     try {
       const ruleId = await manager.creator.newRule(data.name, data.formula);
@@ -494,7 +492,6 @@ module.exports = {
     }
 
     const t = await db.transaction();
-    const manager = new Manager(db);
 
     try {
       await manager.updater.updateRule(ruleId, data.name, data.formula);
@@ -566,7 +563,6 @@ module.exports = {
       callback(true);
       return;
     }
-    const manager = new Manager(db);
     try {
       await manager.deleter.deleteRule(ruleId);
       callback(null);
@@ -579,7 +575,6 @@ module.exports = {
       callback(true);
       return;
     }
-    const manager = new Manager(db);
     try {
       const rows = await manager.getter.getGroups();
       callback(null, rows);
