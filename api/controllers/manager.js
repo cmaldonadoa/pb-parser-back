@@ -67,12 +67,15 @@ module.exports = {
     let error = false;
     for await (const rule of rules) {
       rule.groupId = groupId;
+      rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
       rule.filters = rule.filters.map((f, i) => ({
         ...f,
         index: i,
+        spaces: f.spaces || [],
         constraints: f.constraints.map((c, j) => ({
           ...c,
           index: j,
+          values: c.values || [],
         })),
       }));
 
