@@ -69,18 +69,15 @@ class Attribute(ISolver):
 
 
 class AttributeList(ISolver):
-    def __init__(self, p, attributes):
+    def __init__(self, p, attribute):
         self.p = p
-        self.attributes = attributes
+        self.attribute = attribute
 
     def __repr__(self):
         return f"\\text{{{self.attribute}}}"
 
     def solve(self, literal_map):
-        result = dict()
-        for attribute in self.attributes:
-            result[attribute] = [p.get_value(self.attribute) for p in literal_map[self.p]]
-        return result
+        return [p.get_value(self.attribute) for p in literal_map[self.p]]
 
 
 class InNumber(ISolver):
@@ -285,7 +282,7 @@ class Then(Operator):
 
 
 # Concrete functions
-class SetCardinality(Function):
+class Cardinality(Function):
     def solve(self, literal_map):
         return len(self.a.solve(literal_map))
 
@@ -349,7 +346,7 @@ class Calculator:
         if r_pos < len(string) - 1:
             return
 
-        funcs = {"sum": Sumatory, "count": SetCardinality}
+        funcs = {"sum": Sumatory, "count": Cardinality}
 
         return {
             "arg": string[l_pos + 1:r_pos],
@@ -486,12 +483,20 @@ class Calculator:
             [" then ", Then],
         ]
 
+        def is_valid(arg):
+            cond1 = arg.count("(") != arg.count(")")
+            cond2 = arg.count("[") != arg.count("]")
+            cond3 = arg.find("(") > arg.find(")")
+            cond4 = arg.find("[") > arg.find("]")
+            return not (cond1 or cond2 or cond3 or cond4)
+
         for op_str, op_class in ops:
             args = string.split(op_str)
             if len(args) == 2:
                 l = args[0]
                 r = args[1]
-                if l.count("(") != l.count(")") or r.count("(") != r.count(")"):
+
+                if not is_valid(l) or not is_valid(r):
                     continue
 
                 l_solved = Calculator._parse_formula(l)
@@ -515,24 +520,37 @@ class Calculator:
                             partial1 = None
                             partial2 = None
                         else:
-                            arg1 = arg
-                            arg1 = Calculator._parse_formula(arg1)
+                            arg1 = Calculator._parse_formula(arg)
 
                     else:
                         if partial1:
                             partial2 = arg
-                            if arg1:
-                                arg2 = Calculator._parse_formula(partial1 + op_str + partial2)
-                                arg1 = op_class(arg1, arg2)
-                                arg2 = None
-                            else:
-                                arg1 = Calculator._parse_formula(partial1 + op_str + partial2)
 
-                            partial1 = None
+                            if arg1:
+                                if not is_valid(partial1 + op_str + partial2):
+                                    partial1 = partial1 + op_str + partial2
+                                    partial2 = None
+
+                                else:
+                                    arg2 = Calculator._parse_formula(
+                                        partial1 + op_str + partial2)
+                                    arg1 = op_class(arg1, arg2)
+                                    arg2 = None
+                            else:
+                                if not is_valid(partial1 + op_str + partial2):
+                                    partial1 = partial1 + op_str + partial2
+                                else:
+                                    if partial1 + op_str + partial2 == string:
+                                        break
+                                    arg1 = Calculator._parse_formula(
+                                        partial1 + op_str + partial2)
+                                    partial1 = None
+
                             partial2 = None
 
                         else:
                             partial1 = arg
+
                 if arg1:
                     return arg1
             else:

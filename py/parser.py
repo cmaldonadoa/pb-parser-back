@@ -13,7 +13,7 @@ from collider import Collider
 
 
 selector = Selector()
-SingleValueType = Union[str, int, float, None]
+SingleValueType = Union[str, int, float, None, List[type(IfcEntity)]]
 ValueType = List[SingleValueType]
 
 
@@ -77,32 +77,30 @@ class Rule:
 
 class Packet:
     def __init__(self, element: IfcEntity) -> None:
-        self.guid = getattr(element, "GlobalId", element.is_a())
+        self.id = element.id()
         self.type = element.is_a()
-        self.description = element.Description
-        self.name = element.Name
-        self.vals = dict()
+        self._vals = dict()
 
     def __hash__(self) -> int:
-        return hash(self.guid)
+        return hash(self.id)
 
     def __eq__(self, o: object) -> bool:
-        return self.guid == o.guid
+        return self.id == o.id
 
     def __ne__(self, o: object) -> bool:
         return not self.__eq__(o)
 
     def __repr__(self) -> str:
-        return {"guid": self.guid, "values": self.vals}
+        return {"guid": self.id, "values": self._vals}.__repr__()
 
     def __str__(self) -> str:
-        return {"guid": self.guid, "values": self.vals}
+        return {"guid": self.id, "values": self._vals}
 
     def add_value(self, name: str, value: ValueType) -> None:
-        self.vals[name] = value
+        self._vals[name] = value
 
     def get_value(self, name: str) -> ValueType:
-        return self.vals[name]
+        return self._vals[name]
 
 
 class Parser:
@@ -110,7 +108,7 @@ class Parser:
         self._file = ifcopenshell.open(path)
         self._scope = Scope.GLOBAL
         self._space_mode = Space.ALL
-        self._space = ""
+        self._spaces = []
         self._all_elements = []
         self._partial_elements = []
         self._rules = []
@@ -122,15 +120,11 @@ class Parser:
             self._all_elements += [{"ifc": e} for e in elements]
         return self
 
-    def on_space(self, name: str, mode: str = "all") -> Parser:
-        self._scope = Scope.SPACE
-        self._space = name
-        if mode == "all":
-            self._space_mode = Space.ALL
-        if mode == "bounds":
-            self._space_mode = Space.BOUNDS
-        if mode == "inside":
-            self._space_mode = Space.INSIDE
+    def on_spaces(self, names: List[str], mode: Union[Space.ALL, Space.BOUNDS, Space.INSIDE] = Space.ALL) -> Parser:
+        if bool(names):
+            self._scope = Scope.SPACE
+            self._spaces = names
+            self._space_mode = mode
         return self
 
     def add_rule(self, rule: Rule) -> Parser:
@@ -143,8 +137,8 @@ class Parser:
 
         for rule in self._rules:
             if self._scope == Scope.SPACE:
-                spaces = selector.parse(
-                    self._file, f'.IfcSpace[LongName *= "{self._space}"]')
+                query = " | ".join(map(lambda x: f'.IfcSpace[LongName *= "{x}"]', self._spaces))
+                spaces = selector.parse(self._file, query)
                 ifc_elements = [e["ifc"] for e in self._all_elements]
 
                 for space in spaces:
@@ -232,22 +226,26 @@ class Parser:
 
     # Private methods
     def _keep(self, element: dict, attribute: str, value: ValueType) -> None:
+        if type(value) == list or type(value) == tuple:
+            value = len(value)
         element[attribute] = value
         self._partial_elements.append(element)
 
     def _solve(self, op: str, arg1: SingleValueType, arg2: ValueType) -> bool:
         ops = {
-            "EQUAL": lambda a, b: any([re.search(str(e), str(a)) for e in b]),
-            "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) for e in b]),
+            "EQUAL": lambda a, b: any([re.search(str(e), str(a)) if type(e) == str else e == a for e in b]),
+            "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) if type(e) == str else e != a for e in b]),
             "GREATER": lambda a, b: any([a > e for e in b]),
             "LESSER": lambda a, b: any([a < e for e in b]),
             "GREATER_EQUAL": lambda a, b: any([a >= e for e in b]),
             "LESSER_EQUAL": lambda a, b: any([a <= e for e in b]),
-            "EXISTS": lambda a: bool(a),
-            "NOT_EXISTS": lambda a: not bool(a),
+            "EXISTS": lambda a: bool(str(a)),
+            "NOT_EXISTS": lambda a: not bool(str(a)),
         }
         unary = ["EXISTS", "NOT_EXISTS"]
 
+        if type(arg1) == list or type(arg1) == tuple:
+            return len(arg1) > 0
         return ops[op](*(arg1,) if op in unary else (arg1, arg2))
 
     def _search_default(
@@ -271,8 +269,7 @@ class Parser:
             placement = placement.PlacementRelTo
 
         this_value = {"x": g_coords[0], "y": g_coords[1], "z": g_coords[2]}[attribute]
-        values = [f"^{str(val)}$" for val in value]
-        if self._solve(op, this_value, values):
+        if self._solve(op, this_value, value):
             self._keep(element, str(id), this_value)
 
     def _search_pset_entity(
