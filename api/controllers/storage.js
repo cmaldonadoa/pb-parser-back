@@ -20,9 +20,9 @@ module.exports = {
     }
 
     if (
-      /.+\.ifc$/.test(file.name) ||
-      /.+\.zip$/.test(file.name) ||
-      /.+\.ifczip$/.test(file.name)
+      !/\.ifc$/.test(file.name) &&
+      !/\.zip$/.test(file.name) &&
+      !/\.ifczip$/.test(file.name)
     ) {
       res.status(400).json({
         status: 400,

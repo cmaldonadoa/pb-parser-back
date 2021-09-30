@@ -58,12 +58,12 @@ module.exports = {
       });
 
       for await (const ruleId of rules) {
-        await manager.getRuleHeader(ruleId, (err, row) => {
+        await manager.getRuleHeader(ruleId, (err, rule) => {
           if (err) throw err;
           parser.getRuleMetadata({ fileId, ruleId }, (err, mapping) => {
             if (err) throw err;
             exec(
-              `python3 py/data_checker.py '${row[0].formula}' '${JSON.stringify(
+              `python3 py/data_checker.py '${rule.formula}' '${JSON.stringify(
                 mapping
               )}'`,
               (err, stdout, stderr) => {
@@ -72,7 +72,7 @@ module.exports = {
                   res.status(500).json({ status: 500 });
                   return;
                 }
-                results[row[0].name] = JSON.parse(stdout);
+                results[rule.name] = JSON.parse(stdout);
                 if (Object.keys(results).length === rules.length)
                   res.status(200).json({ status: 200, data: results });
               }
