@@ -14,7 +14,7 @@ def parse_rule(d):
     for rfilter in d["filters"]:
         parser = Parser(file_path)
         parser.include(*rfilter["entities"])
-        parser.on_spaces(rfilter["space"])
+        parser.on_spaces(rfilter["spaces"])
 
         for constraint in sorted(rfilter["constraints"], key=lambda x: x["index"]):
             rule = Rule(constraint["id"])
@@ -43,7 +43,7 @@ class ParserEnconde(json.JSONEncoder):
             return list(o)
 
         if isinstance(o, Packet):
-            return {"guid": o.guid, "values": o.vals}
+            return {"guid": o.id, "values": o._vals}
 
         return super().default(o)
 
