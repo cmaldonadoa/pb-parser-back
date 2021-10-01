@@ -8,13 +8,18 @@ const errorResponse = (filename, variant, error) => {
   return true;
 };
 
+const log = (...args) => {
+  console.log(...args);
+  return true;
+};
+
 module.exports = {
   parse: (req, res) => {
     const fileId = parseInt(req.body.file_id);
     const groupId = parseInt(req.body.group_id);
     const path = `${__dirname}/../../files/${fileId}`;
 
-    storage.getFileWithType({ id: fileId }, (err, info) =>
+    storage.getFileWithType({ fileId: fileId }, (err, info) =>
       err
         ? errorResponse(fileId, "Reading info", err) &&
           res.status(500).json({ status: 500 })
@@ -26,7 +31,9 @@ module.exports = {
                   `python3 py/data_getter.py '${path}/${
                     info.file.name
                   }.ifc' '${JSON.stringify(
-                    rules.filter((e) => e.modelTypes.indexOf(info.type) >= 0)
+                    rules.filter(
+                      (e) => e.modelTypes.indexOf(info.type[0].name) >= 0
+                    )
                   )}'`,
                   (err, stdout, stderr) =>
                     err
