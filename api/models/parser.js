@@ -26,7 +26,7 @@ module.exports = {
             const { guid, values } = packet;
             for await (const k of Object.keys(values)) {
               const constraintId = parseInt(k);
-              const value = values[k];
+              const value = Array.isArray(values[k]) ? values[k] : [values[k]];
 
               const oldValues = await db.get(
                 "SELECT * FROM `file_metadata` WHERE `file_id` = ? AND `constraint_id` = ?",
@@ -34,15 +34,29 @@ module.exports = {
               );
 
               if (oldValues.length > 0) {
-                await db.update(
-                  "UPDATE `file_metadata` SET `value` = ?, `ifc_guid` = ? WHERE `file_id` = ? AND `constraint_id` = ?",
-                  [value, guid, data.fileId, constraintId]
+                await db.delete(
+                  "DELETE FROM `metadata_value` WHERE `file_metadata_id` = ?",
+                  [oldValues[0].file_metadata_id]
                 );
+
+                for await (const singleValue of value) {
+                  await db.insert(
+                    "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
+                    [oldValues[0].file_metadata_id, singleValue]
+                  );
+                }
               } else {
-                await db.insert(
-                  "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `value`, `ifc_guid`) VALUES (?, ?, ?, ?)",
-                  [data.fileId, constraintId, value, guid]
+                const metadataId = await db.insert(
+                  "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `ifc_guid`) VALUES (?, ?, ?)",
+                  [data.fileId, constraintId, guid]
                 );
+
+                for await (const singleValue of value) {
+                  await db.insert(
+                    "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
+                    [metadataId, singleValue]
+                  );
+                }
               }
             }
           }
@@ -77,30 +91,39 @@ module.exports = {
         );
 
         const constraintIds = constraints.map((c) => c.constraint_id);
-        const values = await db.get(
-          "SELECT m.`ifc_guid`, c.`attribute`, m.`value` " +
-            "FROM `file_metadata` m " +
-            "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
-            "WHERE m.`file_id` = ? AND m.`constraint_id` IN " +
-            `(${constraintIds.map((e) => "?").join()})`,
-          [data.fileId, ...constraintIds]
-        );
 
-        const typedValues = values.map((v) => ({
-          ...v,
-          value: /\d+/.test(v.value)
-            ? parseInt(v.value)
-            : /\d+\.\d+/.test(v.value)
-            ? parseFloat(v.value)
-            : v.value,
-        }));
+        let result = [];
+        for await (const constraintId of constraintIds) {
+          const metadata = await db.get(
+            "SELECT m.`ifc_guid`, c.`attribute`, m.`file_metadata_id` " +
+              "FROM `file_metadata` m " +
+              "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
+              "WHERE m.`file_id` = ? AND m.`constraint_id` = ?",
+            [data.fileId, constraintId]
+          );
+          if (metadata.length > 0) {
+            const values = await db.get(
+              "SELECT `value` FROM `metadata_value` WHERE `file_metadata_id` = ?",
+              [metadata[0].file_metadata_id]
+            );
+
+            const typedValues = values.map((v) =>
+              /^\d+$/.test(v.value)
+                ? parseInt(v.value)
+                : /^\d+\.\d+$/.test(v.value)
+                ? parseFloat(v.value)
+                : v.value
+            );
+            result.push({ ...metadata[0], value: typedValues });
+          }
+        }
 
         const valuesByGuid = ((arr, property) => {
           return arr.reduce((acc, cur) => {
             acc[cur[property]] = [...(acc[cur[property]] || []), cur];
             return acc;
           }, {});
-        })(typedValues, "ifc_guid");
+        })(result, "ifc_guid");
 
         const packets = [];
         for (const guid of Object.keys(valuesByGuid)) {
