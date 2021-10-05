@@ -76,7 +76,7 @@ module.exports = {
               )}' '${JSON.stringify(ruleMap)}'`,
               (err, stdout, stderr) => {
                 if (err) {
-                  errorResponse(fileId, "Checking", stderr);
+                  errorResponse(fileId, `Checking ${ruleId}`, stderr);
                   res.status(500).json({ status: 500 });
                   return;
                 }
