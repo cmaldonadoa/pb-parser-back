@@ -144,6 +144,10 @@ module.exports = {
                 ? parseInt(v.value)
                 : /^\d+\.\d+$/.test(v.value)
                 ? parseFloat(v.value)
+                : /^true$/i.test(v.value)
+                ? true
+                : /^false$/i.test(v.value)
+                ? false
                 : v.value
             );
             result.push({ ...metadata[0], value: typedValues });
