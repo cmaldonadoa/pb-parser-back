@@ -8,7 +8,7 @@ class mList(list):
     def __sub__(self, o):
         if len(self) != len(o):
             raise Exception("Lengths mismatch")
-        return [a - b for a, b in zip(self, o)]
+        return mList(a - b for a, b in zip(self, o))
 
 # Abstract classes
 
@@ -77,7 +77,11 @@ class Attribute(ISolver):
         return f"{self.p[0].upper()}_{{{self.p[1:]}}}.\\text{{{self.attribute}}}"
 
     def solve(self, data):
-        return mList(p.get_value(self.attribute) for p in data["map"][self.p])
+        v_list = mList()
+        for p in data["map"][self.p]:
+            v = mList(p.get_value(self.attribute))
+            v_list += v
+        return v_list
 
 
 class AttributeList(ISolver):
