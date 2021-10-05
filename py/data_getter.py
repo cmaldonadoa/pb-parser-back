@@ -31,8 +31,8 @@ def parse_rule(d):
             rule.expect(constraint.get("values"))
             parser.add_rule(rule)
 
-        packets = parser.search()
-        rule_filters.append(packets)
+        packets, min_distance = parser.search()
+        rule_filters.append(({"filter": rfilter["id"], "packets": packets}, min_distance))
 
     return rule_filters
 
@@ -51,6 +51,6 @@ class ParserEnconde(json.JSONEncoder):
 result = []
 for r in rules:
     rule_filters = parse_rule(r)
-    result.append(rule_filters)
+    result.append((r["id"], rule_filters))
 
 print(json.dumps(result, cls=ParserEnconde))

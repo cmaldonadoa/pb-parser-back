@@ -131,7 +131,7 @@ class Parser:
         self._rules.append(rule)
         return self
 
-    def search(self) -> List[Packet]:
+    def search(self) -> tuple[List[Packet], float]:
         if len(self._rules) == 0:
             return self._error()
 
@@ -214,20 +214,22 @@ class Parser:
             self._all_elements = self._partial_elements
             self._partial_elements = []
 
+        collider = Collider()
         packets = []
         for x in self._all_elements:
             p = Packet(x["ifc"])
+            collider.add(x["ifc"])
             for k in x:
                 if k != "ifc":
                     p.add_value(k, x[k])
             packets.append(p)
 
-        return set(packets)
+        return set(packets), collider.get_min_distance()
 
     # Private methods
     def _keep(self, element: dict, attribute: str, value: ValueType) -> None:
         if type(value) == list or type(value) == tuple:
-            value = len(value)
+            value = list(map(lambda x: x.id(), value))
         element[attribute] = value
         self._partial_elements.append(element)
 
@@ -235,10 +237,10 @@ class Parser:
         ops = {
             "EQUAL": lambda a, b: any([re.search(str(e), str(a)) if type(e) == str else e == a for e in b]),
             "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) if type(e) == str else e != a for e in b]),
-            "GREATER": lambda a, b: any([a > e for e in b]),
-            "LESSER": lambda a, b: any([a < e for e in b]),
-            "GREATER_EQUAL": lambda a, b: any([a >= e for e in b]),
-            "LESSER_EQUAL": lambda a, b: any([a <= e for e in b]),
+            "GREATER": lambda a, b: any([str(a) > str(e) for e in b]),
+            "LESSER": lambda a, b: any([str(a) < str(e) for e in b]),
+            "GREATER_EQUAL": lambda a, b: any([str(a) >= str(e) for e in b]),
+            "LESSER_EQUAL": lambda a, b: any([str(a) <= str(e) for e in b]),
             "EXISTS": lambda a: bool(str(a)),
             "NOT_EXISTS": lambda a: not bool(str(a)),
         }
