@@ -67,12 +67,13 @@ module.exports = {
       for await (const ruleId of rules) {
         await manager.getRuleHeader(ruleId, (err, rule) => {
           if (err) throw err;
-          parser.getRuleMetadata({ fileId, ruleId }, (err, mapping) => {
+          parser.getRuleMetadata({ fileId, ruleId }, (err, metadata) => {
+            const { ruleMetadata, ruleMap } = metadata;
             if (err) throw err;
             exec(
               `python3 py/data_checker.py '${rule.formula}' '${JSON.stringify(
-                mapping
-              )}'`,
+                ruleMetadata
+              )}' '${JSON.stringify(ruleMap)}'`,
               (err, stdout, stderr) => {
                 if (err) {
                   errorResponse(fileId, "Checking", stderr);

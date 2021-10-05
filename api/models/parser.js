@@ -20,9 +20,31 @@ module.exports = {
     }
     const t = await db.transaction();
     try {
-      for await (const rule of data.metadata) {
-        for await (const filter of rule) {
-          for await (const packet of filter) {
+      for await (const meta of data.metadata) {
+        const [ruleId, tuples] = meta;
+
+        for await (const tuple of tuples) {
+          const [filterData, distance] = tuple;
+          const filterId = filterData.filter;
+          const packets = filterData.packets;
+
+          const oldFilterMetadata = await db.get(
+            "SELECT * FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+            [data.fileId, filterId]
+          );
+
+          if (oldFilterMetadata.length) {
+            await db.update(
+              "UPDATE `file_metadata_filter` SET `min_distance` = ? WHERE `file_id` = ? AND `filter_id` = ?",
+              [distance, data.fileId, filterId]
+            );
+          } else {
+            await db.insert(
+              "INSERT INTO `file_metadata_filter`(`file_id`, `filter_id`, `min_distance`) VALUES (?, ?, ?)",
+              [data.fileId, filterId, distance]
+            );
+          }
+          for await (const packet of packets) {
             const { guid, values } = packet;
             for await (const k of Object.keys(values)) {
               const constraintId = parseInt(k);
@@ -33,7 +55,7 @@ module.exports = {
                 [data.fileId, constraintId]
               );
 
-              if (oldValues.length > 0) {
+              if (oldValues.length) {
                 await db.delete(
                   "DELETE FROM `metadata_value` WHERE `file_metadata_id` = ?",
                   [oldValues[0].file_metadata_id]
@@ -83,8 +105,18 @@ module.exports = {
       );
 
       const filterMap = {};
+      const filterMeta = {};
 
       for await (const filter of filters) {
+        const filterMetadata = await db.get(
+          "SELECT `min_distance` FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+          [data.fileId, filter.filter_id]
+        );
+
+        filterMeta[`p${filter.index}`] = {
+          distance: filterMetadata[0].min_distance,
+        };
+
         const constraints = await db.get(
           "SELECT `constraint_id` FROM `constraint` WHERE `filter_id` = ?",
           [filter.filter_id]
@@ -138,7 +170,10 @@ module.exports = {
         filterMap[`p${filter.index}`] = packets;
       }
 
-      callback(null, filterMap);
+      callback(null, {
+        ruleMetadata: filterMeta,
+        ruleMap: filterMap,
+      });
     } catch (error) {
       callback(error);
     }
