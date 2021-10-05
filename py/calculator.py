@@ -1,11 +1,21 @@
 from abc import ABC, abstractmethod
 import re
 
+# Custom list
+
+
+class mList(list):
+    def __sub__(self, o):
+        if len(self) != len(o):
+            raise Exception("Lengths mismatch")
+        return [a - b for a, b in zip(self, o)]
 
 # Abstract classes
+
+
 class ISolver(ABC):
     @abstractmethod
-    def solve(self, literal_map):
+    def solve(self, data):
         pass
 
 
@@ -29,12 +39,14 @@ class Set(set, ISolver):
 class NamedSet(ISolver):
     def __init__(self, p):
         self.p = p
+        self.meta = dict()
 
     def __repr__(self):
         return f"{self.p[0].upper()}_{{{self.p[1:]}}}"
 
-    def solve(self, literal_map):
-        return Set(literal_map[self.p])
+    def solve(self, data):
+        self.meta = data["meta"][self.p]
+        return Set(data["map"][self.p])
 
 
 class EmptySet(ISolver):
@@ -62,10 +74,10 @@ class Attribute(ISolver):
         self.attribute = attribute
 
     def __repr__(self):
-        return f"\\text{{{self.attribute}}}"
+        return f"{self.p[0].upper()}_{{{self.p[1:]}}}.\\text{{{self.attribute}}}"
 
-    def solve(self, literal_map):
-        return [p.get_value(self.attribute) for p in literal_map[self.p]]
+    def solve(self, data):
+        return mList(p.get_value(self.attribute) for p in data["map"][self.p])
 
 
 class AttributeList(ISolver):
@@ -76,8 +88,8 @@ class AttributeList(ISolver):
     def __repr__(self):
         return f"\\text{{{self.attribute}}}"
 
-    def solve(self, literal_map):
-        return [p.get_value(self.attribute) for p in literal_map[self.p]]
+    def solve(self, data):
+        return mList(p.get_value(self.attribute) for p in data["map"][self.p])
 
 
 class InNumber(ISolver):
@@ -88,39 +100,51 @@ class InNumber(ISolver):
     def __repr__(self):
         return str(self.n)
 
-    def solve(self, literal_map):
-        return [self.n for _ in literal_map[self.p]]
+    def solve(self, data):
+        return mList(self.n for _ in data["map"][self.p])
+
+
+class InBool(ISolver):
+    def __init__(self, p, v):
+        self.p = p
+        self.value = True if re.search("^T$", v, re.I) else False
+
+    def __repr__(self):
+        return str(self.value)[0]
+
+    def solve(self, data):
+        return mList(self.value for _ in data["map"][self.p])
 
 
 # Concrete operators
 class Union(Operator):
-    def solve(self, literal_map):
-        return Set(self.a.solve(literal_map) & self.b.solve(literal_map))
+    def solve(self, data):
+        return Set(self.a.solve(data) | self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\union {self.b})"
 
 
 class Intersection(Operator):
-    def solve(self, literal_map):
-        return Set(self.a.solve(literal_map) | self.b.solve(literal_map))
+    def solve(self, data):
+        return Set(self.a.solve(data) & self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\intersect {self.b})"
 
 
 class Difference(Operator):
-    def solve(self, literal_map):
-        return Set(self.a.solve(literal_map) - self.b.solve(literal_map))
+    def solve(self, data):
+        return Set(self.a.solve(data) - self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} - {self.b})"
 
 
 class Division(Operator):
-    def solve(self, literal_map):
-        a = self.a.solve(literal_map)
-        b = self.b.solve(literal_map)
+    def solve(self, data):
+        a = self.a.solve(data)
+        b = self.b.solve(data)
         return False if b == 0 else a / b
 
     def __repr__(self):
@@ -128,174 +152,253 @@ class Division(Operator):
 
 
 class Equal(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) == self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) == self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} = {self.b}"
 
 
 class NotEqual(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) != self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) != self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} \\neq {self.b}"
 
 
 class Greater(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) > self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) > self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} > {self.b}"
 
 
 class Lesser(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) < self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) < self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} < {self.b}"
 
 
 class GreaterEq(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) >= self.b.solve(literal_map)
+    def solve(self, data):
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+        if type(a) != type(b) and (type(a) == mList or type(a) == Set):
+            mB = mList(b for _ in range(len(a)))
+            return all(mList(x >= y for x, y in zip(a, mB)))
+
+        return a >= b
 
     def __repr__(self):
         return f"{self.a} \\geq {self.b}"
 
 
 class LesserEq(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) <= self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) <= self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} \\leq {self.b}"
 
 
 class InAdd(Operator):
-    def solve(self, literal_map):
-        return [a + b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))]
+    def solve(self, data):
+        return mList(a + b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
     def __repr__(self):
         return f"({self.a} + {self.b})"
 
 
 class InSub(Operator):
-    def solve(self, literal_map):
-        return [a - b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))]
+    def solve(self, data):
+        return mList(a - b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
     def __repr__(self):
         return f"({self.a} - {self.b})"
 
 
 class InMultiply(Operator):
-    def solve(self, literal_map):
-        return [a * b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))]
+    def solve(self, data):
+        return mList(a * b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
     def __repr__(self):
         return f"({self.a} * {self.b})"
 
 
 class InDivision(Operator):
-    def solve(self, literal_map):
-        return [False if b == 0 else a / b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))]
+    def solve(self, data):
+        return mList(False if b == 0 else a / b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
     def __repr__(self):
         return f"({self.a} / {self.b})"
 
 
 class InEqual(Operator):
-    def solve(self, literal_map):
-        return all([a == b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a == b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} = {self.b}"
 
 
 class InNotEqual(Operator):
-    def solve(self, literal_map):
-        return all([a != b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a != b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} \\neq {self.b}"
 
 
 class InGreater(Operator):
-    def solve(self, literal_map):
-        return all([a > b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a > b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} > {self.b}"
 
 
 class InLesser(Operator):
-    def solve(self, literal_map):
-        return all([a < b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a < b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} < {self.b}"
 
 
 class InGreaterEq(Operator):
-    def solve(self, literal_map):
-        return all([a >= b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a >= b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} \\geq {self.b}"
 
 
 class InLesserEq(Operator):
-    def solve(self, literal_map):
-        return all([a <= b for a, b in zip(self.a.solve(literal_map), self.b.solve(literal_map))])
+    def solve(self, data):
+        return all(mList(a <= b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
     def __repr__(self):
         return f"{self.a} \\leq {self.b}"
 
 
 class Or(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) or self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) or self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} \\vee {self.b}"
 
 
 class And(Operator):
-    def solve(self, literal_map):
-        return self.a.solve(literal_map) and self.b.solve(literal_map)
+    def solve(self, data):
+        return self.a.solve(data) and self.b.solve(data)
 
     def __repr__(self):
         return f"{self.a} \\wedge {self.b}"
 
 
 class Then(Operator):
-    def solve(self, literal_map):
-        if self.a.solve(literal_map):
-            return self.b.solve(literal_map)
+    def solve(self, data):
+        if self.a.solve(data):
+            return self.b.solve(data)
         return True
 
     def __repr__(self):
         return f"({self.a} \\ \\rightarrow \\  {self.b})"
 
 
+class For(Operator):
+    def solve(self, data):
+        r = mList()
+        for a, b in zip(self.a.solve(data), self.b.solve(data)):
+            if b:
+                r.append(a)
+        return r
+
+    def __repr__(self):
+        return f"({self.a} \\ : \\  {self.b})"
+
+
+class In(Operator):
+    def solve(self, data):
+        b = self.b.solve(data)
+        return mList(map(lambda x: x in b, self.a.solve(data)))
+
+    def __repr__(self):
+        return f"({self.a} \\ \\in \\  {self.b})"
+
+
+class Cross(Operator):
+    def solve(self, data):
+        b = self.b.solve(data)
+        c = mList()
+        for a in self.a.solve(data):
+            c.append(mList(map(lambda x: x == a, b)))
+
+        return c
+
+    def __repr__(self):
+        return f"({self.a} \\ \\times \\  {self.b})"
+
+
+class As(Operator):
+    def solve(self, data):
+        for a, b in zip(self.a.solve(data), self.b.solve(data)):
+            t = []
+            for x, y in zip(a, b):
+                t.append(x and y)
+
+            if t != b:
+                return False
+        return True
+
+    def __repr__(self):
+        return f"{{{self.a} \\ \\sim \\  {self.b}}}"
+
+
+class Multiply(Operator):
+    def solve(self, data):
+        A = self.a.solve(data)
+        B = self.b.solve(data)
+
+        return mList(mList(sum(a * b for a, b in zip(A_row, B_col))
+                           for B_col in zip(*B))
+                     for A_row in A)
+
+    def __repr__(self):
+        return f"({self.a} \\cdot {self.b})"
+
+
 # Concrete functions
 class Cardinality(Function):
-    def solve(self, literal_map):
-        return len(self.a.solve(literal_map))
+    def solve(self, data):
+        return len(self.a.solve(data))
 
     def __repr__(self):
         return f"|{self.a}|"
 
 
 class Sumatory(Function):
-    def solve(self, literal_map):
-        return sum(self.a.solve(literal_map))
+    def solve(self, data):
+        return sum(self.a.solve(data))
 
     def __repr__(self):
-        return f"\\Sigma{{({self.a})}}"  # f"\\sum_{{\\ }}^{{\\ }}{{({self.a})}}"
+        return f"\\Sigma{{({self.a})}}"
+
+
+class Distance(Function):
+    def solve(self, data):
+        try:
+            return self.a.solve(data).meta["distance"]
+        except:
+            return float("inf")
+
+    def __repr__(self):
+        return f"d({self.a})"
 
 
 # Main class
@@ -346,7 +449,7 @@ class Calculator:
         if r_pos < len(string) - 1:
             return
 
-        funcs = {"sum": Sumatory, "count": Cardinality}
+        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance}
 
         return {
             "arg": string[l_pos + 1:r_pos],
@@ -387,6 +490,10 @@ class Calculator:
         # CASE NUMBER
         if re.search('^\d+(\.\d+)?$', string):
             return InNumber(set_name, eval(string))
+
+        # CASE BOOL
+        if re.search('^t|f$', string, re.I):
+            return InBool(set_name, string)
 
         # CASE ATTRIBUTE
         if re.search('^\w+$', string):
@@ -481,6 +588,11 @@ class Calculator:
             [" or ", Or],
             [" and ", And],
             [" then ", Then],
+            [" for ", For],
+            [" in ", In],
+            [" as ", As],
+            [" x ", Cross],
+            [" * ", Multiply],
         ]
 
         def is_valid(arg):
@@ -587,9 +699,9 @@ class Calculator:
         return Calculator._parse_external_op(string)
 
     @staticmethod
-    def solve(formula, literal_map):
+    def solve(formula, data, metadata):
         solver = Calculator.parse(formula)
-        return solver.solve(literal_map)
+        return solver.solve({"map": data, "meta": metadata})
 
     @staticmethod
     def parse(formula):
