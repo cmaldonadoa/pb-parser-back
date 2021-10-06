@@ -52,11 +52,13 @@ module.exports = {
   parseFormula: (req, res) => {
     const formula = req.body.formula;
 
-    exec(`python3 py/formula_parser.py "${formula}"`, (err, stdout, stderr) =>
-      err
-        ? errorResponse(formula, "Parsing", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, latex: stdout })
+    exec(
+      `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`,
+      (err, stdout, stderr) =>
+        err
+          ? errorResponse(formula, "Parsing", err) &&
+            res.status(500).json({ status: 500 })
+          : res.status(200).json({ status: 200, latex: stdout })
     );
   },
 
