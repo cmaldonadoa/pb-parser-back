@@ -28,7 +28,7 @@ module.exports = {
               ? errorResponse(fileId, "Reading rules", err) &&
                 res.status(500).json({ status: 500 })
               : exec(
-                  `python3 ${__dirname}/py/data_getter.py '${path}/${
+                  `python3 ${__dirname}/../../py/data_getter.py '${path}/${
                     info.file.name
                   }.ifc' '${JSON.stringify(
                     rules.filter(
@@ -71,7 +71,7 @@ module.exports = {
             const { ruleMetadata, ruleMap } = metadata;
             if (err) throw err;
             exec(
-              `python3 ${__dirname}/py/data_checker.py '${
+              `python3 ${__dirname}/../../py/data_checker.py '${
                 rule.formula
               }' '${JSON.stringify(ruleMetadata)}' '${JSON.stringify(
                 ruleMap
