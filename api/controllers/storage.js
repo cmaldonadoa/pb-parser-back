@@ -75,4 +75,16 @@ module.exports = {
         : res.status(200).json({ status: 200, files: data })
     );
   },
+
+  removeFile: (req, res) => {
+    model.deleteFile(req.params.file, (err) => {
+      const path = `${__dirname}/../../files`;
+      exec(`rm -rf ${path}/${req.params.file}`, (err, stdout, stderr) =>
+        err
+          ? errorResponse("FILES", "removing file", err) &&
+            res.status(500).json({ status: 500 })
+          : res.status(200).json({ status: 200 })
+      );
+    });
+  },
 };

@@ -83,4 +83,13 @@ module.exports = {
       callback(error);
     }
   },
+
+  deleteFile: async (fileId, callback) => {
+    try {
+      await db.delete("DELETE FROM `file` WHERE `file_id` = ?", [fileId]);
+      callback(null);
+    } catch (error) {
+      callback(error);
+    }
+  },
 };

@@ -100,7 +100,7 @@ module.exports = {
           [data.fileId, filter.filter_id]
         );
 
-        filterMeta[`p${filter.index}`] = {
+        filterMeta[`${filter.name}`] = {
           distance: filterMetadata[0].min_distance,
         };
 
@@ -160,7 +160,7 @@ module.exports = {
           packets.push(packet);
         }
 
-        filterMap[`p${filter.index}`] = packets;
+        filterMap[`${filter.name}`] = packets;
       }
 
       return {

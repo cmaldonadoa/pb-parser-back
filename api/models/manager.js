@@ -742,4 +742,33 @@ module.exports = {
       callback(error);
     }
   },
+  removeTender: async (tenderId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      await db.get("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
+      callback(null);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  createGroup: async (groupName, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const groupId = await db.insert(
+        "INSERT INTO `group`(`name`) VALUES (?)",
+        [groupName]
+      );
+      callback(null, groupId);
+    } catch (error) {
+      callback(error);
+    }
+  },
 };

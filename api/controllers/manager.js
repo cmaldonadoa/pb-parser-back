@@ -161,4 +161,19 @@ module.exports = {
         : res.status(200).json({ status: 200, rules: data })
     );
   },
+  deleteTender: (req, res) => {
+    model.removeTender(req.params.tender, (err) =>
+      err
+        ? errorResponse("Tender", "Deleting tender", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200 })
+    );
+  },
+  createGroup: (req, res) =>
+    model.createGroup(req.body.name, (err, id) =>
+      err
+        ? errorResponse("Group", "Creating group", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, group: id })
+    ),
 };

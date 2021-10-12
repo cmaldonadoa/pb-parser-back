@@ -11,12 +11,14 @@ module.exports = function (app) {
   app.get("/rules/:group", controller.fetchRules);
 
   app.get("/groups", controller.fetchGroups);
+  app.post("/groups", controller.createGroup);
   app.post("/parse_formula", controller.parseFormula);
 
   app.get("/regions", controller.fetchRegions);
   app.get("/regions/:region", controller.fetchCommunes);
 
   app.post("/tenders", adminOnly, controller.createTender);
+  app.delete("/tenders/:tender", controller.deleteTender);
   app.get("/tenders/:tender", controller.fetchTender);
   app.get("/tenders", controller.fetchTenders);
 

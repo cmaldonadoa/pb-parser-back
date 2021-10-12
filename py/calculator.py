@@ -37,12 +37,12 @@ class Set(set, ISolver):
 
 
 class NamedSet(ISolver):
-    def __init__(self, p):
-        self.p = p
+    def __init__(self, name):
+        self.p = name
         self.meta = dict()
 
     def __repr__(self):
-        return f"{self.p[0].upper()}_{{{self.p[1:]}}}"
+        return f"#{self.p}"
 
     def solve(self, data):
         self.meta = data["meta"][self.p]
@@ -74,7 +74,7 @@ class Attribute(ISolver):
         self.attribute = attribute
 
     def __repr__(self):
-        return f"{self.p[0].upper()}_{{{self.p[1:]}}}.\\text{{{self.attribute}}}"
+        return f"{self.p}.\\text{{{self.attribute}}}"
 
     def solve(self, data):
         v_list = mList()
@@ -463,7 +463,7 @@ class Calculator:
     @staticmethod
     def _parse_internal_func(string):
 
-        if not re.search('^\w+\[.*\]$', string):
+        if not re.search('^#\w+\[.*\]$', string):
             return
 
         l_pos = string.index("[")
@@ -685,8 +685,8 @@ class Calculator:
             return EmptySet()
 
         # CASE SET
-        if re.search('^p\d+$', string):
-            return NamedSet(string)
+        if re.search('^#\w+$', string):
+            return NamedSet(string[1:])
 
         # CASE FUNCTION
         f = Calculator._parse_func(string)
