@@ -25,6 +25,7 @@ app.use(
 require("./api/routes/storage")(app);
 require("./api/routes/parser")(app);
 require("./api/routes/manager")(app);
+require("./api/routes/authentication")(app);
 
 app.all("*", function (req, res) {
   res.status(404).json({

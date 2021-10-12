@@ -37,7 +37,7 @@ module.exports = {
     const path = `${__dirname}/../../files`;
     const zipped = extension === "zip" || extension === "ifczip";
 
-    model.saveFile({ name: filename, type }, (err, id) =>
+    model.saveFile(req.userId, { name: filename, type }, (err, id) =>
       err
         ? errorResponse(filename, "Saving the file to DB", err) &&
           res.status(500).json({ status: 500 })
@@ -60,6 +60,15 @@ module.exports = {
   },
   fetchFiles: (req, res) => {
     model.getFiles((err, data) =>
+      err
+        ? errorResponse("FILES", "Fetching files", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, files: data })
+    );
+  },
+
+  fetchFilesUser: (req, res) => {
+    model.getFilesUser(req.userId, (err, data) =>
       err
         ? errorResponse("FILES", "Fetching files", err) &&
           res.status(500).json({ status: 500 })

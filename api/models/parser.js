@@ -20,6 +20,9 @@ module.exports = {
     }
     const t = await db.transaction();
     try {
+      await db.delete("DELETE FROM `file_metadata` WHERE `file_id` = ?", [
+        data.fileId,
+      ]);
       for await (const meta of data.metadata) {
         const [ruleId, tuples] = meta;
 
@@ -33,7 +36,7 @@ module.exports = {
             [data.fileId, filterId]
           );
 
-          if (oldFilterMetadata.length) {
+          if (oldFilterMetadata.length > 0) {
             await db.update(
               "UPDATE `file_metadata_filter` SET `min_distance` = ? WHERE `file_id` = ? AND `filter_id` = ?",
               [distance, data.fileId, filterId]
@@ -44,41 +47,25 @@ module.exports = {
               [data.fileId, filterId, distance]
             );
           }
+
           for await (const packet of packets) {
             const { guid, values } = packet;
             for await (const k of Object.keys(values)) {
               const constraintId = parseInt(k);
-              const value = Array.isArray(values[k]) ? values[k] : [values[k]];
+              const valueList = Array.isArray(values[k])
+                ? values[k]
+                : [values[k]];
 
-              const oldValues = await db.get(
-                "SELECT * FROM `file_metadata` WHERE `file_id` = ? AND `constraint_id` = ?",
-                [data.fileId, constraintId]
+              const metadataId = await db.insert(
+                "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `ifc_guid`) VALUES (?, ?, ?)",
+                [data.fileId, constraintId, guid]
               );
 
-              if (oldValues.length) {
-                await db.delete(
-                  "DELETE FROM `metadata_value` WHERE `file_metadata_id` = ?",
-                  [oldValues[0].file_metadata_id]
+              for await (const singleValue of valueList) {
+                await db.insert(
+                  "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
+                  [metadataId, singleValue]
                 );
-
-                for await (const singleValue of value) {
-                  await db.insert(
-                    "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
-                    [oldValues[0].file_metadata_id, singleValue]
-                  );
-                }
-              } else {
-                const metadataId = await db.insert(
-                  "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `ifc_guid`) VALUES (?, ?, ?)",
-                  [data.fileId, constraintId, guid]
-                );
-
-                for await (const singleValue of value) {
-                  await db.insert(
-                    "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
-                    [metadataId, singleValue]
-                  );
-                }
               }
             }
           }
@@ -133,10 +120,11 @@ module.exports = {
               "WHERE m.`file_id` = ? AND m.`constraint_id` = ?",
             [data.fileId, constraintId]
           );
-          if (metadata.length > 0) {
+
+          for await (const metavalue of metadata) {
             const values = await db.get(
               "SELECT `value` FROM `metadata_value` WHERE `file_metadata_id` = ?",
-              [metadata[0].file_metadata_id]
+              [metavalue.file_metadata_id]
             );
 
             const typedValues = values.map((v) =>
@@ -150,7 +138,8 @@ module.exports = {
                 ? false
                 : v.value
             );
-            result.push({ ...metadata[0], value: typedValues });
+
+            result.push({ ...metavalue, value: typedValues });
           }
         }
 
@@ -174,10 +163,10 @@ module.exports = {
         filterMap[`p${filter.index}`] = packets;
       }
 
-      callback(null, {
+      return {
         ruleMetadata: filterMeta,
         ruleMap: filterMap,
-      });
+      };
     } catch (error) {
       callback(error);
     }

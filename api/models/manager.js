@@ -6,10 +6,10 @@ class Manager {
   constructor(sqlManager) {
     this.sqlManager = sqlManager;
     this.creator = {
-      newRule: async (name, formula) => {
+      newRule: async (userId, name, formula, description) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `rule` (`name`, `formula`) VALUES (?, ?)",
-          [name, formula]
+          "INSERT INTO `rule` (`name`, `formula`, `description`, `created_by`) VALUES (?, ?, ?, ?)",
+          [name, formula, description, userId]
         );
         return result;
       },
@@ -33,10 +33,10 @@ class Manager {
           );
         }
       },
-      newFilter: async (ruleId, index) => {
+      newFilter: async (ruleId, index, name) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `filter` (`rule_id`, `index`) VALUES (?, ?)",
-          [ruleId, index]
+          "INSERT INTO `filter` (`rule_id`, `index`, `name`) VALUES (?, ?, ?)",
+          [ruleId, index, name]
         );
         return result;
       },
@@ -94,12 +94,12 @@ class Manager {
         return result;
       },
       newSpecificConstraint: async (constraintId, constraintSpecification) => {
-        if (constraintSpecification.type === "pset") {
+        if (constraintSpecification.type === "PSET_QTO") {
           await this.sqlManager.insert(
             "INSERT INTO `pset_constraint` (`constraint_id`, `name_regexp`) VALUES (?, ?)",
             [constraintId, constraintSpecification.pset]
           );
-        } else if (constraintSpecification.type === "location") {
+        } else if (constraintSpecification.type === "LOCATION") {
           await this.sqlManager.insert(
             "INSERT INTO `location_constraint` (`constraint_id`) VALUES (?)",
             [constraintId]
@@ -143,9 +143,10 @@ class Manager {
       },
       getRule: async (ruleId) => {
         const result = await this.sqlManager
-          .get("SELECT `name`, `formula` FROM `rule` WHERE `rule_id` = ?", [
-            ruleId,
-          ])
+          .get(
+            "SELECT `name`, `formula`, `description` FROM `rule` WHERE `rule_id` = ?",
+            [ruleId]
+          )
           .then((res) => res[0])
           .catch((err) => ({}));
         return result;
@@ -163,7 +164,7 @@ class Manager {
       },
       getFilters: async (ruleId) => {
         const result = await this.sqlManager.get(
-          "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
+          "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
           [ruleId]
         );
         return result;
@@ -221,10 +222,10 @@ class Manager {
       },
     };
     this.updater = {
-      updateRule: async (ruleId, name, formula) => {
+      updateRule: async (ruleId, name, formula, description) => {
         await this.sqlManager.update(
-          "UPDATE `rule` SET `name` = ?, `formula` = ?  WHERE `rule_id` = ?",
-          [name, formula, ruleId]
+          "UPDATE `rule` SET `name` = ?, `formula` = ?, `description` = ? WHERE `rule_id` = ?",
+          [name, formula, description, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, index) => {
@@ -318,6 +319,7 @@ const getRule = async (ruleId, callback) => {
     const rule = await manager.getter.getRule(ruleId);
     result.name = rule.name;
     result.formula = rule.formula;
+    result.description = rule.description;
 
     const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
@@ -326,7 +328,11 @@ const getRule = async (ruleId, callback) => {
     const filtersArray = [];
 
     for await (const filter of filters) {
-      const filterObject = { id: filter.filter_id, index: filter.index };
+      const filterObject = {
+        id: filter.filter_id,
+        index: filter.index,
+        name: filter.name,
+      };
 
       const spaces = await manager.getter.getSpaces(filter.filter_id);
       filterObject.spaces = spaces;
@@ -352,11 +358,11 @@ const getRule = async (ruleId, callback) => {
 
         const thisConstraint = [
           ...psetConstraints.map((c) => ({
-            type: "pset",
+            type: "PSET_QTO",
             pset: c.name_regexp,
           })),
-          ...locConstraint.map((c) => ({ type: "location" })),
-          ...attrConstraint.map((c) => ({ type: "attribute" })),
+          ...locConstraint.map((c) => ({ type: "LOCATION" })),
+          ...attrConstraint.map((c) => ({ type: "ATTRIBUTE" })),
         ];
 
         const values = await manager.getter.getValues(constraint.constraint_id);
@@ -436,7 +442,7 @@ module.exports = {
     }
     return getRule(ruleId, callback);
   },
-  createRule: async (data, callback) => {
+  createRule: async (userId, data, callback) => {
     if (!testConnection()) {
       callback(true);
       return;
@@ -445,13 +451,22 @@ module.exports = {
     const t = await db.transaction();
 
     try {
-      const ruleId = await manager.creator.newRule(data.name, data.formula);
+      const ruleId = await manager.creator.newRule(
+        userId,
+        data.name,
+        data.formula,
+        data.description
+      );
 
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
-      await manager.creator.linkRuleGroup(ruleId, data.groupId);
+      await manager.creator.linkRuleGroup(ruleId, data.group);
 
       for await (const filter of data.filters) {
-        const filterId = await manager.creator.newFilter(ruleId, filter.index);
+        const filterId = await manager.creator.newFilter(
+          ruleId,
+          filter.index,
+          filter.name
+        );
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
@@ -479,7 +494,7 @@ module.exports = {
       }
 
       await t.commit();
-      callback(null);
+      callback(null, ruleId);
     } catch (error) {
       await t.rollback();
       callback(error);
@@ -494,13 +509,18 @@ module.exports = {
     const t = await db.transaction();
 
     try {
-      await manager.updater.updateRule(ruleId, data.name, data.formula);
+      await manager.updater.updateRule(
+        ruleId,
+        data.name,
+        data.formula,
+        data.description
+      );
 
       await manager.deleter.unlinkRuleModelTypes(ruleId);
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
 
       await manager.deleter.unlinkRuleGroup(ruleId);
-      await manager.creator.linkRuleGroup(ruleId, data.groupId);
+      await manager.creator.linkRuleGroup(ruleId, data.group);
 
       for await (const filter of data.filters) {
         let filterId = filter.id;
@@ -509,7 +529,11 @@ module.exports = {
           await manager.deleter.unlinkFilterEntities(filterId);
           await manager.deleter.unlinkFilterSpaces(filterId);
         } else {
-          filterId = await manager.creator.newFilter(ruleId, filter.index);
+          filterId = await manager.creator.newFilter(
+            ruleId,
+            filter.index,
+            filter.name
+          );
         }
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
@@ -577,6 +601,142 @@ module.exports = {
     }
     try {
       const rows = await manager.getter.getGroups();
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getRegions: async (callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get("SELECT * FROM `region`", []);
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getCommunes: async (regionId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get(
+        "SELECT `commune_id`, `name` FROM `commune` WHERE `region_id` = ?",
+        [regionId]
+      );
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+
+  createTender: async (userId, data, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const buildingType = await db.get(
+        "SELECT `building_type_id` FROM `building_type` WHERE `name` = ?",
+        [data.type]
+      );
+
+      const tenderId = await db.insert(
+        "INSERT INTO `tender`(" +
+          "`name`,`region_id`,`commune_id`,`address`,`propertyRole`,`constructabilityCoef`," +
+          "`soilOccupancyCoef`,`building_type_id`,`angle`,`vulnerable`,`handicapVulnerable`," +
+          "`medios1`,`handicapMedios1`,`medios2`,`handicapMedios2`,`total`, `created_by`) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          data.name,
+          data.region,
+          data.commune,
+          data.address,
+          data.propertyRole,
+          data.constructabilityCoef,
+          data.soilOccupancyCoef,
+          buildingType[0].building_type_id,
+          data.angle,
+          data.vulnerable,
+          data.isHandicapVulnerable ? data.handicapVulnerable : 0,
+          data.medios1,
+          data.isHandicapMedios1 ? data.handicapMedios1 : 0,
+          data.medios2,
+          data.isHandicapMedios2 ? data.handicapMedios2 : 0,
+          data.total,
+          userId,
+        ]
+      );
+
+      callback(null, tenderId);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getTenders: async (callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get("SELECT `tender_id`, `name` FROM `tender`", []);
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+
+  getTender: async (tenderId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get(
+        "SELECT t.*, r.`name` building_type_name FROM `tender` t JOIN `building_type` r ON t.`building_type_id` = r.`building_type_id` WHERE `tender_id` = ?",
+        [tenderId]
+      );
+      callback(null, rows[0]);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getTendersUser: async (userId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get(
+        "SELECT `tender_id`, `name` FROM `tender` WHERE `created_by` = ?",
+        [userId]
+      );
+      callback(null, rows);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  getRulesUser: async (userId, callback) => {
+    if (!testConnection()) {
+      callback(true);
+      return;
+    }
+
+    try {
+      const rows = await db.get(
+        "SELECT `rule_id`, `name` FROM `rule` WHERE `created_by` = ?",
+        [userId]
+      );
       callback(null, rows);
     } catch (error) {
       callback(error);

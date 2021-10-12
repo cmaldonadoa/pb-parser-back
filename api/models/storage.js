@@ -13,7 +13,7 @@ const testConnection = async () => {
 };
 
 module.exports = {
-  saveFile: async (data, callback) => {
+  saveFile: async (userId, data, callback) => {
     if (!testConnection()) {
       callback(true);
       return;
@@ -26,8 +26,8 @@ module.exports = {
         .then((res) => res[0].model_type_id);
 
       const result = await db.insert(
-        "INSERT INTO `file` (`name`, `model_type_id`) VALUES (?, ?)",
-        [data.name, typeId]
+        "INSERT INTO `file` (`name`, `model_type_id`, `created_by`) VALUES (?, ?, ?)",
+        [data.name, typeId, userId]
       );
 
       callback(null, result);
@@ -37,7 +37,10 @@ module.exports = {
   },
   getFiles: async (callback) => {
     try {
-      const result = await db.get("SELECT * FROM `file`", []);
+      const result = await db.get(
+        "SELECT `file_id`, f.`name` filename, r.`name` typename, `upload_date` FROM `file` f JOIN `model_type` r ON f.`model_type_id` = r.`model_type_id`",
+        []
+      );
       callback(null, result);
     } catch (error) {
       callback(error);
@@ -64,6 +67,18 @@ module.exports = {
         [result.model_type_id]
       );
       callback(null, { file: result, type });
+    } catch (error) {
+      callback(error);
+    }
+  },
+
+  getFilesUser: async (userId, callback) => {
+    try {
+      const result = await db.get(
+        "SELECT `file_id` FROM `file` WHERE `created_by` = ?",
+        [userId]
+      );
+      callback(null, result);
     } catch (error) {
       callback(error);
     }

@@ -21,9 +21,9 @@ def parse_rule(d):
             if constraint["on"] == "TYPE":
                 rule.on_type()
 
-            if constraint["type"] == "pset":
+            if constraint["type"] == "PSET_QTO":
                 rule.on_pset(constraint["pset"])
-            elif constraint["type"] == "location":
+            elif constraint["type"] == "LOCATION":
                 rule.on_location()
 
             rule.set_op(constraint["operation"])

@@ -8,11 +8,11 @@ const errorResponse = (filename, variant, error) => {
 
 module.exports = {
   createRule: (req, res) => {
-    model.createRule(req.body, (err) =>
+    model.createRule(req.userId, req.body, (err, ruleId) =>
       err
         ? errorResponse("Rules", "Creating a rule", err) &&
           res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200 })
+        : res.status(200).json({ status: 200, ruleId })
     );
   },
   updateRule: (req, res) => {
@@ -100,6 +100,65 @@ module.exports = {
         ? errorResponse("Rules", "Fetching groups", err) &&
           res.status(500).json({ status: 500 })
         : res.status(200).json({ status: 200, groups: data })
+    );
+  },
+
+  fetchRegions: (req, res) => {
+    model.getRegions((err, data) =>
+      err
+        ? errorResponse("Regions", "Fetching regions", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, regions: data })
+    );
+  },
+  fetchCommunes: (req, res) => {
+    model.getCommunes(req.params.region, (err, data) =>
+      err
+        ? errorResponse("Commune", "Fetching communes", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, communes: data })
+    );
+  },
+
+  createTender: (req, res) => {
+    model.createTender(req.userId, req.body, (err, tenderId) =>
+      err
+        ? errorResponse("Tenders", "Creating a tender", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, tenderId })
+    );
+  },
+
+  fetchTenders: (req, res) => {
+    model.getTenders((err, data) =>
+      err
+        ? errorResponse("Tenders", "Fetching tenders", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, tenders: data })
+    );
+  },
+  fetchTender: (req, res) => {
+    model.getTender(req.params.tender, (err, data) =>
+      err
+        ? errorResponse("Tender", "Fetching tender", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, tender: data })
+    );
+  },
+  fetchUserTenders: (req, res) => {
+    model.getTendersUser(req.userId, (err, data) =>
+      err
+        ? errorResponse("Tender", "Fetching tender", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, tenders: data })
+    );
+  },
+  fetchUserRules: (req, res) => {
+    model.getRulesUser(req.userId, (err, data) =>
+      err
+        ? errorResponse("Rules", "Fetching rule", err) &&
+          res.status(500).json({ status: 500 })
+        : res.status(200).json({ status: 200, rules: data })
     );
   },
 };
