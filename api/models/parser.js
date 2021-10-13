@@ -20,9 +20,10 @@ module.exports = {
     }
     const t = await db.transaction();
     try {
-      await db.delete("DELETE FROM `file_metadata` WHERE `file_id` = ?", [
-        data.fileId,
-      ]);
+      await db.delete(
+        "DELETE FROM [ifc_bim].[file_metadata] WHERE [file_id] = ?",
+        [data.fileId]
+      );
       for await (const meta of data.metadata) {
         const [ruleId, tuples] = meta;
 
@@ -32,18 +33,18 @@ module.exports = {
           const packets = filterData.packets;
 
           const oldFilterMetadata = await db.get(
-            "SELECT * FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+            "SELECT * FROM [ifc_bim].[file_metadata_filter] WHERE [file_id] = ? AND [filter_id] = ?",
             [data.fileId, filterId]
           );
 
           if (oldFilterMetadata.length > 0) {
             await db.update(
-              "UPDATE `file_metadata_filter` SET `min_distance` = ? WHERE `file_id` = ? AND `filter_id` = ?",
+              "UPDATE [ifc_bim].[file_metadata_filter] SET [min_distance] = ? WHERE [file_id] = ? AND [filter_id] = ?",
               [distance, data.fileId, filterId]
             );
           } else {
             await db.insert(
-              "INSERT INTO `file_metadata_filter`(`file_id`, `filter_id`, `min_distance`) VALUES (?, ?, ?)",
+              "INSERT INTO [ifc_bim].[file_metadata_filter] ([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
               [data.fileId, filterId, distance]
             );
           }
@@ -57,13 +58,13 @@ module.exports = {
                 : [values[k]];
 
               const metadataId = await db.insert(
-                "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `ifc_guid`) VALUES (?, ?, ?)",
+                "INSERT INTO [ifc_bim].[file_metadata] ([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
                 [data.fileId, constraintId, guid]
               );
 
               for await (const singleValue of valueList) {
                 await db.insert(
-                  "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
+                  "INSERT INTO [ifc_bim].[metadata_value] ([file_metadata_id], [value]) VALUES (?, ?)",
                   [metadataId, singleValue]
                 );
               }
@@ -87,7 +88,7 @@ module.exports = {
 
     try {
       const filters = await db.get(
-        "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
+        "SELECT [filter_id], [index] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
         [data.ruleId]
       );
 
@@ -96,7 +97,7 @@ module.exports = {
 
       for await (const filter of filters) {
         const filterMetadata = await db.get(
-          "SELECT `min_distance` FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+          "SELECT [min_distance] FROM [ifc_bim].[file_metadata_filter] WHERE [file_id] = ? AND [filter_id] = ?",
           [data.fileId, filter.filter_id]
         );
 
@@ -105,7 +106,7 @@ module.exports = {
         };
 
         const constraints = await db.get(
-          "SELECT `constraint_id` FROM `constraint` WHERE `filter_id` = ?",
+          "SELECT [constraint_id] FROM [ifc_bim].[constraint] WHERE [filter_id] = ?",
           [filter.filter_id]
         );
 
@@ -114,16 +115,16 @@ module.exports = {
         let result = [];
         for await (const constraintId of constraintIds) {
           const metadata = await db.get(
-            "SELECT m.`ifc_guid`, c.`attribute`, m.`file_metadata_id` " +
-              "FROM `file_metadata` m " +
-              "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
-              "WHERE m.`file_id` = ? AND m.`constraint_id` = ?",
+            "SELECT m.[ifc_guid], c.[attribute], m.[file_metadata_id] " +
+              "FROM [ifc_bim].[file_metadata] m " +
+              "JOIN [ifc_bim].[constraint] c ON c.[constraint_id] = m.[constraint_id] " +
+              "WHERE m.[file_id] = ? AND m.[constraint_id] = ?",
             [data.fileId, constraintId]
           );
 
           for await (const metavalue of metadata) {
             const values = await db.get(
-              "SELECT `value` FROM `metadata_value` WHERE `file_metadata_id` = ?",
+              "SELECT [value] FROM [ifc_bim].[metadata_value] WHERE [file_metadata_id] = ?",
               [metavalue.file_metadata_id]
             );
 
