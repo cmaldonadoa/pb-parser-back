@@ -21,7 +21,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `password` FROM `user` WHERE `username` = ?",
+        "SELECT [password] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
       callback(false, rows[0].password);
@@ -36,7 +36,7 @@ module.exports = {
     }
     try {
       const rows = await db.get(
-        "SELECT `user_id` FROM `user` WHERE `username` = ?",
+        "SELECT [user_id] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
       callback(false, rows[0].user_id);
@@ -51,7 +51,7 @@ module.exports = {
     }
     try {
       const rows = await db.get(
-        "SELECT `name` FROM `user_role` t JOIN `role` r ON t.`role_id` = r.`role_id` WHERE `user_id` = ?",
+        "SELECT [name] FROM [ifc_bim].[user_role] t JOIN [ifc_bim].[role] r ON t.[role_id] = r.[role_id] WHERE [user_id] = ?",
         [userId]
       );
       callback(false, rows[0].name);
@@ -67,11 +67,11 @@ module.exports = {
     }
     try {
       const userId = await db.insert(
-        "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
+        "INSERT INTO [ifc_bim].[user] ([username], [password], [region_id]) VALUES (?, ?, ?)",
         [username, hash, regionId]
       );
       await db.insert(
-        "INSERT INTO `user_role` (`user_id`, `role_id`) VALUES (?, ?)",
+        "INSERT INTO [user_role] ([user_id], [role_id]) VALUES (?, ?)",
         [userId, roleId]
       );
 

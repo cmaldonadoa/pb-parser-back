@@ -8,34 +8,35 @@ class Manager {
     this.creator = {
       newRule: async (userId, name, formula, description) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `rule` (`name`, `formula`, `description`, `created_by`) VALUES (?, ?, ?, ?)",
+          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by]) VALUES (?, ?, ?, ?)",
           [name, formula, description, userId]
         );
         return result;
       },
       linkRuleGroup: async (ruleId, groupId) => {
         await this.sqlManager.insert(
-          "INSERT INTO `rule_group` (`rule_id`, `group_id`) VALUES (?, ?)",
+          "INSERT INTO [ifc_bim].[rule_group] ([rule_id], [group_id]) VALUES (?, ?)",
           [ruleId, groupId]
         );
       },
       linkRuleModelTypes: async (ruleId, modelTypesList) => {
         for await (const modelType of modelTypesList) {
           const modelTypeId = await this.sqlManager
-            .get("SELECT `model_type_id` FROM `model_type` WHERE `name` = ?", [
-              modelType,
-            ])
+            .get(
+              "SELECT [model_type_id] FROM [ifc_bim].[model_type] WHERE [name] = ?",
+              [modelType]
+            )
             .then((res) => res[0].model_type_id);
 
           await this.sqlManager.insert(
-            "INSERT INTO `rule_model_type` (`rule_id`, `model_type_id`) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[rule_model_type] ([rule_id], [model_type_id]) VALUES (?, ?)",
             [ruleId, modelTypeId]
           );
         }
       },
       newFilter: async (ruleId, index, name) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `filter` (`rule_id`, `index`, `name`) VALUES (?, ?, ?)",
+          "INSERT INTO [ifc_bim].[filter] ([rule_id], [index], [name]) VALUES (?, ?, ?)",
           [ruleId, index, name]
         );
         return result;
@@ -44,21 +45,21 @@ class Manager {
         for await (const entity of entitiesList) {
           let entityId = null;
           const entities = await this.sqlManager.get(
-            "SELECT `entity_id` FROM `entity` WHERE `name` = ?",
+            "SELECT [entity_id] FROM [ifc_bim].[entity] WHERE `name` = ?",
             [entity]
           );
           if (entities.length > 0) {
             entityId = entities[0].entity_id;
           } else {
             const result = await this.sqlManager.insert(
-              "INSERT INTO `entity` (`name`) VALUES (?)",
+              "INSERT INTO [ifc_bim].[entity] ([name]) VALUES (?)",
               [entity]
             );
             entityId = result;
           }
 
           await this.sqlManager.insert(
-            "INSERT INTO `filter_entity` (`filter_id`, `entity_id`) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[filter_entity] ([filter_id], [entity_id]) VALUES (?, ?)",
             [filterId, entityId]
           );
         }
@@ -67,28 +68,28 @@ class Manager {
         for await (const space of spacesList) {
           let spaceId = null;
           const spaces = await this.sqlManager.get(
-            "SELECT `space_id` FROM `space` WHERE `name` = ?",
+            "SELECT [space_id] FROM [ifc_bim].[space] WHERE [name] = ?",
             [space]
           );
           if (spaces.length > 0) {
             spaceId = spaces[0].space_id;
           } else {
             const result = await this.sqlManager.insert(
-              "INSERT INTO `space` (`name`) VALUES (?)",
+              "INSERT INTO [ifc_bim].[space] ([name]) VALUES (?)",
               [space]
             );
             spaceId = result;
           }
 
           await this.sqlManager.insert(
-            "INSERT INTO `filter_space` (`filter_id`, `space_id`) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[filter_space] ([filter_id], [space_id]) VALUES (?, ?)",
             [filterId, spaceId]
           );
         }
       },
       newConstraint: async (operationId, onId, filterId, attribute, index) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO `constraint` (`operation_id`, `on_id`, `filter_id`, `attribute`, `index`) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO [ifc_bim].[constraint] ([operation_id], [on_id], [filter_id], [attribute], [index]) VALUES (?, ?, ?, ?, ?)",
           [operationId, onId, filterId, attribute, index]
         );
         return result;
@@ -96,17 +97,17 @@ class Manager {
       newSpecificConstraint: async (constraintId, constraintSpecification) => {
         if (constraintSpecification.type === "PSET_QTO") {
           await this.sqlManager.insert(
-            "INSERT INTO `pset_constraint` (`constraint_id`, `name_regexp`) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[pset_constraint] ([constraint_id], [name_regexp]) VALUES (?, ?)",
             [constraintId, constraintSpecification.pset]
           );
         } else if (constraintSpecification.type === "LOCATION") {
           await this.sqlManager.insert(
-            "INSERT INTO `location_constraint` (`constraint_id`) VALUES (?)",
+            "INSERT INTO [ifc_bim].[location_constraint] ([constraint_id]) VALUES (?)",
             [constraintId]
           );
         } else {
           await this.sqlManager.insert(
-            "INSERT INTO `attribute_constraint` (`constraint_id`) VALUES (?)",
+            "INSERT INTO [ifc_bim].[attribute_constraint] ([constraint_id]) VALUES (?)",
             [constraintId]
           );
         }
@@ -114,7 +115,7 @@ class Manager {
       newExpectedValues: async (valuesList, constraintId) => {
         for await (const value of valuesList) {
           await this.sqlManager.insert(
-            "INSERT INTO `expected_value` (`constraint_id`, `value`) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[expected_value] ([constraint_id], [value]) VALUES (?, ?)",
             [constraintId, value.toString()]
           );
         }
@@ -122,21 +123,24 @@ class Manager {
     };
     this.getter = {
       getGroups: async () => {
-        const result = await this.sqlManager.get("SELECT * FROM `group`");
+        const result = await this.sqlManager.get(
+          "SELECT * FROM [ifc_bim].[group]"
+        );
         return result;
       },
       getOperation: async (name) => {
         const result = await this.sqlManager
-          .get("SELECT `operation_id` FROM `operation` WHERE `name` = ?", [
-            name,
-          ])
+          .get(
+            "SELECT [operation_id] FROM [ifc_bim].[operation] WHERE [name] = ?",
+            [name]
+          )
           .then((res) => res[0].operation_id)
           .catch((err) => -1);
         return result;
       },
       getOn: async (name) => {
         const result = await this.sqlManager
-          .get("SELECT `on_id` FROM `on` WHERE `name` = ?", [name])
+          .get("SELECT [on_id] FROM [ifc_bim].[on] WHERE [name] = ?", [name])
           .then((res) => res[0].on_id)
           .catch((err) => -1);
         return result;
@@ -144,7 +148,7 @@ class Manager {
       getRule: async (ruleId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT `name`, `formula`, `description` FROM `rule` WHERE `rule_id` = ?",
+            "SELECT [name], [formula], [description] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
             [ruleId]
           )
           .then((res) => res[0])
@@ -154,9 +158,9 @@ class Manager {
       getModelTypes: async (ruleId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT e.`name` FROM `model_type` e " +
-              "JOIN `rule_model_type` r ON e.`model_type_id` = r.`model_type_id` " +
-              "WHERE r.`rule_id` = ?",
+            "SELECT e.[name] FROM [ifc_bim].[model_type] e " +
+              "JOIN [ifc_bim].[rule_model_type] r ON e.[model_type_id] = r.[model_type_id] " +
+              "WHERE r.[rule_id] = ?",
             [ruleId]
           )
           .then((res) => res.map((e) => e.name));
@@ -164,7 +168,7 @@ class Manager {
       },
       getFilters: async (ruleId) => {
         const result = await this.sqlManager.get(
-          "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
+          "SELECT [filter_id], [index], [name] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
           [ruleId]
         );
         return result;
@@ -172,9 +176,9 @@ class Manager {
       getSpaces: async (filterId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT e.`name` FROM `space` e " +
-              "JOIN `filter_space` r ON e.`space_id` = r.`space_id` " +
-              "WHERE r.`filter_id` = ?",
+            "SELECT e.[name] FROM [ifc_bim].[space] e " +
+              "JOIN [ifc_bim].[filter_space] r ON e.[space_id] = r.[space_id] " +
+              "WHERE r.[filter_id] = ?",
             [filterId]
           )
           .then((res) => res.map((e) => e.name));
@@ -183,9 +187,9 @@ class Manager {
       getEntities: async (filterId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT e.`name` FROM `entity` e " +
-              "JOIN `filter_entity` r ON e.`entity_id` = r.`entity_id` " +
-              "WHERE r.`filter_id` = ?",
+            "SELECT e.[name] FROM [ifc_bim].[entity] e " +
+              "JOIN [ifc_bim].[filter_entity] r ON e.[entity_id] = r.[entity_id] " +
+              "WHERE r.[filter_id] = ?",
             [filterId]
           )
           .then((res) => res.map((e) => e.name));
@@ -193,11 +197,11 @@ class Manager {
       },
       getConstraints: async (filterId) => {
         const result = await this.sqlManager.get(
-          "SELECT c.`constraint_id`, c.`operation_id`, c.`on_id`, c.`attribute`, c.`index`, r.`name` op_name, s.`name` on_name " +
-            "FROM `constraint` c " +
-            "JOIN `operation` r ON r.`operation_id` = c.`operation_id` " +
-            "JOIN `on` s ON s.`on_id` = c.`on_id` " +
-            "WHERE c.`filter_id` = ?",
+          "SELECT c.[constraint_id], c.[operation_id], c.[on_id], c.[attribute], c.[index], r.[name] op_name, s.[name] on_name " +
+            "FROM [ifc_bim].[constraint] c " +
+            "JOIN [ifc_bim].[operation] r ON r.[operation_id] = c.[operation_id] " +
+            "JOIN [ifc_bim].[on] s ON s.[on_id] = c.[on_id] " +
+            "WHERE c.[filter_id] = ?",
           [filterId]
         );
         return result;
@@ -205,7 +209,7 @@ class Manager {
       getValues: async (constraintId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT `value` FROM `expected_value` WHERE `constraint_id` = ?",
+            "SELECT [value] FROM [ifc_bim].[expected_value] WHERE [constraint_id] = ?",
             [constraintId]
           )
           .then((res) => res.map((e) => e.value));
@@ -213,9 +217,9 @@ class Manager {
       },
       getRulesByGroup: async (groupId) => {
         const result = await this.sqlManager.get(
-          "SELECT e.`rule_id`, e.`name` FROM `rule` e " +
-            "JOIN `rule_group` r ON e.`rule_id` = r.`rule_id` " +
-            "WHERE r.`group_id` = ?",
+          "SELECT e.[rule_id], e.[name] FROM [ifc_bim].[rule] e " +
+            "JOIN [ifc_bim].[rule_group] r ON e.[rule_id] = r.[rule_id] " +
+            "WHERE r.[group_id] = ?",
           [groupId]
         );
         return result;
@@ -224,13 +228,13 @@ class Manager {
     this.updater = {
       updateRule: async (ruleId, name, formula, description) => {
         await this.sqlManager.update(
-          "UPDATE `rule` SET `name` = ?, `formula` = ?, `description` = ? WHERE `rule_id` = ?",
+          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ? WHERE [rule_id] = ?",
           [name, formula, description, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, index) => {
         await this.sqlManager.update(
-          "UPDATE `filter` SET `index` = ? WHERE `filter_id` = ? AND `rule_id` = ?",
+          "UPDATE [ifc_bim].[filter] SET [index] = ? WHERE [filter_id] = ? AND [rule_id] = ?",
           [index, filterId, ruleId]
         );
       },
@@ -242,7 +246,7 @@ class Manager {
         index
       ) => {
         await this.sqlManager.update(
-          "UPDATE `constraint` SET `operation_id` = ?, `on_id` = ?, `attribute` = ?, `index` = ? WHERE `constraint_id` = ?",
+          "UPDATE [ifc_bim].[constraint] SET [operation_id] = ?, [on_id] = ?, [attribute] = ?, [index] = ? WHERE [constraint_id] = ?",
           [operationId, onId, attribute, index, constraintId]
         );
       },
@@ -250,52 +254,53 @@ class Manager {
     this.deleter = {
       unlinkRuleModelTypes: async (ruleId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `rule_model_type` WHERE `rule_id` = ?",
+          "DELETE FROM [ifc_bim].[rule_model_type] WHERE [rule_id] = ?",
           [ruleId]
         );
       },
       unlinkRuleGroup: async (ruleId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `rule_group` WHERE `rule_id` = ?",
+          "DELETE FROM [ifc_bim].[rule_group] WHERE [rule_id] = ?",
           [ruleId]
         );
       },
       unlinkFilterEntities: async (filterId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `filter_entity` WHERE `filter_id` = ?",
+          "DELETE FROM [ifc_bim].[filter_entity] WHERE [filter_id] = ?",
           [filterId]
         );
       },
       unlinkFilterSpaces: async (filterId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `filter_space` WHERE `filter_id` = ?",
+          "DELETE FROM [ifc_bim].[filter_space] WHERE [filter_id] = ?",
           [filterId]
         );
       },
       deleteSpecificConstraint: async (constraintId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `pset_constraint` WHERE `constraint_id` = ?",
+          "DELETE FROM [ifc_bim].[pset_constraint] WHERE [constraint_id] = ?",
           [constraintId]
         );
         await this.sqlManager.delete(
-          "DELETE FROM `attribute_constraint` WHERE `constraint_id` = ?",
+          "DELETE FROM [ifc_bim].[attribute_constraint] WHERE [constraint_id] = ?",
           [constraintId]
         );
         await this.sqlManager.delete(
-          "DELETE FROM `location_constraint` WHERE `constraint_id` = ?",
+          "DELETE FROM [ifc_bim].[location_constraint] WHERE [constraint_id] = ?",
           [constraintId]
         );
       },
       deleteExpectedValues: async (constraintId) => {
         await this.sqlManager.delete(
-          "DELETE FROM `expected_value` WHERE `constraint_id` = ?",
+          "DELETE FROM [ifc_bim].[expected_value] WHERE [constraint_id] = ?",
           [constraintId]
         );
       },
       deleteRule: async (ruleId) => {
-        await this.sqlManager.delete("DELETE FROM `rule` WHERE `rule_id` = ?", [
-          ruleId,
-        ]);
+        await this.sqlManager.delete(
+          "DELETE FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
+          [ruleId]
+        );
       },
     };
   }
@@ -344,15 +349,15 @@ const getRule = async (ruleId, callback) => {
       const constraintsArray = [];
       for await (const constraint of constraints) {
         const psetConstraints = await db.get(
-          "SELECT * FROM `pset_constraint` WHERE `constraint_id` = ?",
+          "SELECT * FROM [ifc_bim].[pset_constraint] WHERE [constraint_id] = ?",
           [constraint.constraint_id]
         );
         const locConstraint = await db.get(
-          "SELECT * FROM `location_constraint` WHERE `constraint_id` = ?",
+          "SELECT * FROM [ifc_bim].[location_constraint] WHERE [constraint_id] = ?",
           [constraint.constraint_id]
         );
         const attrConstraint = await db.get(
-          "SELECT * FROM `attribute_constraint` WHERE `constraint_id` = ?",
+          "SELECT * FROM [ifc_bim].[attribute_constraint] WHERE [constraint_id] = ?",
           [constraint.constraint_id]
         );
 
@@ -613,7 +618,7 @@ module.exports = {
     }
 
     try {
-      const rows = await db.get("SELECT * FROM `region`", []);
+      const rows = await db.get("SELECT * FROM [ifc_bim].[region]", []);
       callback(null, rows);
     } catch (error) {
       callback(error);
@@ -627,7 +632,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `commune_id`, `name` FROM `commune` WHERE `region_id` = ?",
+        "SELECT [commune_id], [name] FROM [ifc_bim].[commune] WHERE [region_id] = ?",
         [regionId]
       );
       callback(null, rows);
@@ -644,15 +649,15 @@ module.exports = {
 
     try {
       const buildingType = await db.get(
-        "SELECT `building_type_id` FROM `building_type` WHERE `name` = ?",
+        "SELECT [building_type_id] FROM [ifc_bim].[building_type] WHERE [name] = ?",
         [data.type]
       );
 
       const tenderId = await db.insert(
-        "INSERT INTO `tender`(" +
-          "`name`,`region_id`,`commune_id`,`address`,`property_role`,`constructability_coef`," +
-          "`soil_occupancy_coef`,`building_type_id`,`angle`,`vulnerable`,`handicap_vulnerable`," +
-          "`medios_1`,`handicap_medios_1`,`medios_2`,`handicap_medios_2`,`total`, `created_by`) " +
+        "INSERT INTO [ifc_bim].[tender] (" +
+          "[name], [region_id], [commune_id], [address], [property_role], [constructability_coef]," +
+          "[soil_occupancy_coef], [building_type_id], [angle], [vulnerable], [handicap_vulnerable]," +
+          "[medios_1], [handicap_medios_1], [medios_2], [handicap_medios_2], [total], [created_by]) " +
           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
@@ -687,7 +692,10 @@ module.exports = {
     }
 
     try {
-      const rows = await db.get("SELECT `tender_id`, `name` FROM `tender`", []);
+      const rows = await db.get(
+        "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
+        []
+      );
       callback(null, rows);
     } catch (error) {
       callback(error);
@@ -702,7 +710,8 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT t.*, r.`name` building_type_name FROM `tender` t JOIN `building_type` r ON t.`building_type_id` = r.`building_type_id` WHERE `tender_id` = ?",
+        "SELECT t.*, r.[name] [building_type_name] FROM [ifc_bim].[tender] t " +
+          "JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
         [tenderId]
       );
       callback(null, rows[0]);
@@ -718,7 +727,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `tender_id`, `name` FROM `tender` WHERE `created_by` = ?",
+        "SELECT [tender_id], [name] FROM [ifc_bim].[tender] WHERE [created_by] = ?",
         [userId]
       );
       callback(null, rows);
@@ -734,7 +743,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `rule_id`, `name` FROM `rule` WHERE `created_by` = ?",
+        "SELECT [rule_id], [name] FROM [ifc_bim].[rule] WHERE [created_by] = ?",
         [userId]
       );
       callback(null, rows);
@@ -749,7 +758,9 @@ module.exports = {
     }
 
     try {
-      await db.get("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
+      await db.get("DELETE FROM [ifc_bim].[tender] WHERE [tender_id] = ?", [
+        tenderId,
+      ]);
       callback(null);
     } catch (error) {
       callback(error);
@@ -763,7 +774,7 @@ module.exports = {
 
     try {
       const groupId = await db.insert(
-        "INSERT INTO `group`(`name`) VALUES (?)",
+        "INSERT INTO [ifc_bim].[group] ([name]) VALUES (?)",
         [groupName]
       );
       callback(null, groupId);
