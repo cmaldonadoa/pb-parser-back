@@ -11,54 +11,66 @@ module.exports = {
       return;
     }
 
-    model.getPassword(username, (err, hash) => {
-      if (err) {
-        res.end();
-        return;
-      }
-      bcrypt.compare(password, hash, (err, result) => {
+    try {
+      model.getPassword(username, (err, hash) => {
         if (err) {
           res.end();
           return;
         }
-        if (result) {
-          model.getUserId(username, (err, id) => {
-            if (err) {
-              res.end();
-              return;
-            }
-            model.getRole(id, (err, role) => {
+        bcrypt.compare(password, hash, (err, result) => {
+          if (err) {
+            res.end();
+            return;
+          }
+          if (result) {
+            model.getUserId(username, (err, id) => {
               if (err) {
                 res.end();
                 return;
               }
-              res.send(jwt.sign({ role, username }, process.env.JWT_KEY));
+              model.getRole(id, (err, role) => {
+                if (err) {
+                  res.end();
+                  return;
+                }
+                res.send(jwt.sign({ role, username }, process.env.JWT_KEY));
+              });
             });
-          });
-        } else {
-          res.end();
-        }
+          } else {
+            res.end();
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.log(error);
+      res.end();
+      return;
+    }
   },
   register: (req, res) => {
     const { regionId, username, password, roleId } = req.body;
 
-    bcrypt.genSalt(10, (err, salt) => {
-      if (err) {
-        res.end();
-        return;
-      }
-      bcrypt.hash(password, salt, (err, hash) => {
+    try {
+      bcrypt.genSalt(10, (err, salt) => {
         if (err) {
           res.end();
           return;
         }
-        model.storeUser({ username, hash, regionId, roleId }, () => {
-          res.end();
+        bcrypt.hash(password, salt, (err, hash) => {
+          if (err) {
+            res.end();
+            return;
+          }
+          model.storeUser({ username, hash, regionId, roleId }, () => {
+            res.end();
+          });
         });
       });
-    });
+    } catch (error) {
+      console.log(error);
+      res.end();
+      return;
+    }
   },
   adminOnly: (req, res, next) => {
     const token = req.header("Authorization");
@@ -67,27 +79,33 @@ module.exports = {
       return;
     }
 
-    jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-      if (err) {
-        res.status(401).end();
-        return;
-      }
-
-      if (decoded.role !== "ADMIN") {
-        res.status(401).end();
-        return;
-      }
-
-      model.getUserId(decoded.username, (err, id) => {
+    try {
+      jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
         if (err) {
           res.status(401).end();
           return;
         }
 
-        req.userId = id;
-        next();
+        if (decoded.role !== "ADMIN") {
+          res.status(401).end();
+          return;
+        }
+
+        model.getUserId(decoded.username, (err, id) => {
+          if (err) {
+            res.status(401).end();
+            return;
+          }
+
+          req.userId = id;
+          next();
+        });
       });
-    });
+    } catch (error) {
+      console.log(error);
+      res.end();
+      return;
+    }
   },
   reviewerOnly: (req, res, next) => {
     const token = req.header("Authorization");
@@ -95,27 +113,32 @@ module.exports = {
       res.status(401).end();
       return;
     }
-
-    jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-      if (err) {
-        res.status(401).end();
-        return;
-      }
-
-      if (decoded.role !== "REVIEWER") {
-        res.status(401).end();
-        return;
-      }
-
-      model.getUserId(decoded.username, (err, id) => {
+    try {
+      jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
         if (err) {
           res.status(401).end();
           return;
         }
 
-        req.userId = id;
-        next();
+        if (decoded.role !== "REVIEWER") {
+          res.status(401).end();
+          return;
+        }
+
+        model.getUserId(decoded.username, (err, id) => {
+          if (err) {
+            res.status(401).end();
+            return;
+          }
+
+          req.userId = id;
+          next();
+        });
       });
-    });
+    } catch (error) {
+      console.log(error);
+      res.end();
+      return;
+    }
   },
 };

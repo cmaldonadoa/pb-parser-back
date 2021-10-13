@@ -650,9 +650,9 @@ module.exports = {
 
       const tenderId = await db.insert(
         "INSERT INTO `tender`(" +
-          "`name`,`region_id`,`commune_id`,`address`,`propertyRole`,`constructabilityCoef`," +
-          "`soilOccupancyCoef`,`building_type_id`,`angle`,`vulnerable`,`handicapVulnerable`," +
-          "`medios1`,`handicapMedios1`,`medios2`,`handicapMedios2`,`total`, `created_by`) " +
+          "`name`,`region_id`,`commune_id`,`address`,`property_role`,`constructability_coef`," +
+          "`soil_occupancy_coef`,`building_type_id`,`angle`,`vulnerable`,`handicap_vulnerable`," +
+          "`medios_1`,`handicap_medios_1`,`medios_2`,`handicap_medios_2`,`total`, `created_by`) " +
           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,

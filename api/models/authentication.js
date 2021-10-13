@@ -19,35 +19,45 @@ module.exports = {
       return;
     }
 
-    const rows = await db.get(
-      "SELECT `password` FROM `user` WHERE `username` = ?",
-      [username]
-    );
-    callback(false, rows[0].password);
+    try {
+      const rows = await db.get(
+        "SELECT `password` FROM `user` WHERE `username` = ?",
+        [username]
+      );
+      callback(false, rows[0].password);
+    } catch (error) {
+      callback(error);
+    }
   },
   getUserId: async (username, callback) => {
     if (!testConnection()) {
       callback(true);
       return;
     }
-
-    const rows = await db.get(
-      "SELECT `user_id` FROM `user` WHERE `username` = ?",
-      [username]
-    );
-    callback(false, rows[0].user_id);
+    try {
+      const rows = await db.get(
+        "SELECT `user_id` FROM `user` WHERE `username` = ?",
+        [username]
+      );
+      callback(false, rows[0].user_id);
+    } catch (error) {
+      callback(error);
+    }
   },
   getRole: async (userId, callback) => {
     if (!testConnection()) {
       callback(true);
       return;
     }
-
-    const rows = await db.get(
-      "SELECT `name` FROM `user_role` t JOIN `role` r ON t.`role_id` = r.`role_id` WHERE `user_id` = ?",
-      [userId]
-    );
-    callback(false, rows[0].name);
+    try {
+      const rows = await db.get(
+        "SELECT `name` FROM `user_role` t JOIN `role` r ON t.`role_id` = r.`role_id` WHERE `user_id` = ?",
+        [userId]
+      );
+      callback(false, rows[0].name);
+    } catch (error) {
+      callback(error);
+    }
   },
 
   storeUser: async ({ username, hash, regionId, roleId }, callback) => {
@@ -55,16 +65,19 @@ module.exports = {
       callback();
       return;
     }
+    try {
+      const userId = await db.insert(
+        "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
+        [username, hash, regionId]
+      );
+      await db.insert(
+        "INSERT INTO `user_role` (`user_id`, `role_id`) VALUES (?, ?)",
+        [userId, roleId]
+      );
 
-    const userId = await db.insert(
-      "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
-      [username, hash, regionId]
-    );
-    await db.insert(
-      "INSERT INTO `user_role` (`user_id`, `role_id`) VALUES (?, ?)",
-      [userId, roleId]
-    );
-
-    callback();
+      callback();
+    } catch (error) {
+      callback();
+    }
   },
 };
