@@ -22,43 +22,50 @@ module.exports = {
     const path = `${__dirname}/../../files/${fileId}`;
     let responseSent = false;
 
-    storage.getFileWithType({ fileId: fileId }, async (err, info) => {
-      if (err)
-        errorResponse(fileId, "Reading info", err) &&
-          res.status(500).json({ status: 500 });
+    try {
+      await storage.getFileWithType({ fileId: fileId }, async (err, info) => {
+        if (err)
+          errorResponse(fileId, "Reading info", err) &&
+            res.status(500).json({ status: 500 });
 
-      for await (const groupId of groupIds) {
-        await manager.getRulesByGroupFull(parseInt(groupId), (err, rules) => {
-          if (err)
-            errorResponse(fileId, "Reading rules", err) &&
-              res.status(500).json({ status: 500 });
-
-          exec(
-            `python3 ${__dirname}/../../py/data_getter.py '${path}/${
-              info.file.name
-            }.ifc' '${JSON.stringify(
-              rules.filter((e) => e.modelTypes.indexOf(info.type[0].name) >= 0)
-            )}'`,
-            (err, stdout, stderr) => {
+        for await (const groupId of groupIds) {
+          await manager.getRulesByGroupFull(
+            parseInt(groupId),
+            async (err, rules) => {
               if (err)
-                errorResponse(fileId, "Parsing", err) &&
+                errorResponse(fileId, "Reading rules", err) &&
                   res.status(500).json({ status: 500 });
 
-              parser.saveMetadata(
+              const { stdout, stderr } = await execPromise(
+                `python3 ${__dirname}/../../py/data_getter.py '${path}/${
+                  info.file.name
+                }.ifc' '${JSON.stringify(
+                  rules.filter(
+                    (e) => e.modelTypes.indexOf(info.type[0].name) >= 0
+                  )
+                )}'`
+              );
+
+              await parser.saveMetadata(
                 { fileId, metadata: JSON.parse(stdout) },
-                (err) =>
-                  err &&
-                  errorResponse(fileId, "Saving data", err) &&
-                  res.status(500).json({ status: 500 }) &&
-                  (responseSent = true)
+                (err) => {
+                  return (
+                    err &&
+                    errorResponse(fileId, "Saving data", err) &&
+                    res.status(500).json({ status: 500 }) &&
+                    (responseSent = true)
+                  );
+                }
               );
             }
           );
-        });
-      }
-
-      !responseSent && res.status(200).json({ stauts: 200 });
-    });
+        }
+        !responseSent && res.status(200).json({ stauts: 200 });
+      });
+    } catch (err) {
+      errorResponse(fileId, "Parsing data", err) &&
+        res.status(500).json({ status: 500 });
+    }
   },
   check: async (req, res) => {
     const fileId = parseInt(req.body.file_id);
