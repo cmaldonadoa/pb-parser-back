@@ -68,11 +68,12 @@ module.exports = {
 
     let error = false;
     for await (const rule of rules) {
-      rule.groupId = groupId;
+      rule.group = groupId;
       rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
       rule.filters = rule.filters.map((f, i) => ({
         ...f,
         index: i,
+        name: "p" + i,
         spaces: f.spaces || [],
         constraints: f.constraints.map((c, j) => ({
           ...c,
@@ -81,7 +82,7 @@ module.exports = {
         })),
       }));
 
-      await model.createRule(rule, (err) => {
+      await model.createRule(req.userId, rule, (err) => {
         if (err) {
           errorResponse("Rules", "Creating a rule", err);
           error = true;
