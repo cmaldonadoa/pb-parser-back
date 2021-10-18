@@ -33,6 +33,21 @@ class Manager {
           );
         }
       },
+      linkRuleBuildingTypes: async (ruleId, buildingTypesList) => {
+        for await (const buildingType of buildingTypesList) {
+          const buildingTypeId = await this.sqlManager
+            .get(
+              "SELECT `building_type_id` FROM `building_type` WHERE `name` = ?",
+              [buildingType]
+            )
+            .then((res) => res[0].building_type_id);
+
+          await this.sqlManager.insert(
+            "INSERT INTO `rule_building_type` (`rule_id`, `building_type_id`) VALUES (?, ?)",
+            [ruleId, buildingTypeId]
+          );
+        }
+      },
       newFilter: async (ruleId, index, name) => {
         const result = await this.sqlManager.insert(
           "INSERT INTO `filter` (`rule_id`, `index`, `name`) VALUES (?, ?, ?)",
@@ -254,6 +269,12 @@ class Manager {
           [ruleId]
         );
       },
+      unlinkRuleBuildingTypes: async (ruleId) => {
+        await this.sqlManager.delete(
+          "DELETE FROM `rule_building_type` WHERE `rule_id` = ?",
+          [ruleId]
+        );
+      },
       unlinkRuleGroup: async (ruleId) => {
         await this.sqlManager.delete(
           "DELETE FROM `rule_group` WHERE `rule_id` = ?",
@@ -460,6 +481,7 @@ module.exports = {
 
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
       await manager.creator.linkRuleGroup(ruleId, data.group);
+      await manager.creator.linkRuleBuildingTypes(ruleId, data.buildingTypes);
 
       for await (const filter of data.filters) {
         const filterId = await manager.creator.newFilter(
@@ -521,6 +543,9 @@ module.exports = {
 
       await manager.deleter.unlinkRuleGroup(ruleId);
       await manager.creator.linkRuleGroup(ruleId, data.group);
+
+      await manager.deleter.unlinkRuleBuildingTypes(ruleId);
+      await manager.creator.linkRuleBuildingTypes(ruleId, data.buildingTypes);
 
       for await (const filter of data.filters) {
         let filterId = filter.id;
@@ -635,7 +660,6 @@ module.exports = {
       callback(error);
     }
   },
-
   createTender: async (userId, data, callback) => {
     if (!testConnection()) {
       callback(true);
@@ -693,7 +717,6 @@ module.exports = {
       callback(error);
     }
   },
-
   getTender: async (tenderId, callback) => {
     if (!testConnection()) {
       callback(true);

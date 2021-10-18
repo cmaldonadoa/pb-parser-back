@@ -87,7 +87,7 @@ module.exports = {
 
     try {
       const filters = await db.get(
-        "SELECT `filter_id`, `index` FROM `filter` WHERE `rule_id` = ?",
+        "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
         [data.ruleId]
       );
 
@@ -160,7 +160,7 @@ module.exports = {
           packets.push(packet);
         }
 
-        filterMap[`${filter.name}`] = packets;
+        filterMap[filter.name] = packets;
       }
 
       return {
