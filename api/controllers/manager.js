@@ -182,7 +182,7 @@ module.exports = {
   },
   createGroup: async (req, res) => {
     try {
-      const id = model.createGroup(req.body.name);
+      const id = await model.createGroup(req.body.name);
       res.status(200).json({ status: 200, group: id });
     } catch (error) {
       console.error(error);

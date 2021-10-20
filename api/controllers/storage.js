@@ -59,7 +59,7 @@ module.exports = {
 
   fetchFilesUser: async (req, res) => {
     try {
-      const data = model.getFilesUser(req.userId);
+      const data = await model.getFilesUser(req.userId);
       res.status(200).json({ status: 200, files: data });
     } catch (error) {
       console.error(error);

@@ -16,7 +16,7 @@ module.exports = {
       const result = await bcrypt.compare(password, hash);
       if (result) {
         const id = await model.getUserId(username);
-        const role = model.getRole(id);
+        const role = await model.getRole(id);
         res.status(200).send(jwt.sign({ role, username }, process.env.JWT_KEY));
       } else {
         res.status(400).end();
