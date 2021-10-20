@@ -1,5 +1,4 @@
-const util = require("util");
-var exec = util.promisify(require("child_process").exec);
+var exec = require("child_process").execSync;
 const model = require("../models/manager.js");
 
 module.exports = {
@@ -56,10 +55,10 @@ module.exports = {
     const formula = req.body.formula;
 
     try {
-      const { stdout, stderr } = exec(
+      const buffer = exec(
         `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`
       );
-      res.status(200).json({ status: 200, latex: stdout });
+      res.status(200).json({ status: 200, latex: buffer.toString() });
     } catch (error) {
       console.error(error);
       res.status(500).json({ status: 500 });

@@ -1,5 +1,4 @@
-const util = require("util");
-var exec = util.promisify(require("child_process").exec);
+var exec = require("child_process").execSync;
 const storage = require("../models/storage.js");
 const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
@@ -14,8 +13,7 @@ module.exports = {
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
       for await (const groupId of groupIds) {
         const rules = await manager.getRulesByGroupFull(parseInt(groupId));
-
-        const { stdout, stderr } = await exec(
+        const buffer = exec(
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
@@ -23,7 +21,10 @@ module.exports = {
           )}'`
         );
 
-        await parser.saveMetadata({ fileId, metadata: JSON.parse(stdout) });
+        await parser.saveMetadata({
+          fileId,
+          metadata: JSON.parse(buffer.toString()),
+        });
       }
       res.status(200).json({ stauts: 200 });
     } catch (error) {
@@ -62,16 +63,17 @@ module.exports = {
             ruleId,
           });
 
-          const { stdout, stderr } = await exec(
+          const buffer = exec(
             `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${JSON.stringify(
               ruleMetadata
             )}' '${JSON.stringify(ruleMap)}'`
           );
 
+          const result = JSON.parse(buffer.toString());
           results[ruleId] = {
             name: name,
             description: description,
-            result: JSON.parse(stdout),
+            result: result,
             filter: ruleMap,
           };
 

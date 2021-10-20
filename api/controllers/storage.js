@@ -1,5 +1,4 @@
-const util = require("util");
-var exec = util.promisify(require("child_process").exec);
+var exec = require("child_process").execSync;
 const model = require("../models/storage.js");
 
 module.exports = {
@@ -37,7 +36,7 @@ module.exports = {
       const id = await model.saveFile(req.userId, { name: filename, type });
       await file.mv(`${path}/${id}/${file.name}`);
       if (zipped) {
-        await exec(
+        exec(
           `unzip -p ${path}/${id}/${file.name} > ${filename}.ifc && rm -f ${file.name}`
         );
       }
@@ -71,7 +70,7 @@ module.exports = {
     try {
       await model.deleteFile(req.params.file);
       const path = `${__dirname}/../../files`;
-      await exec(`rm -rf ${path}/${req.params.file}`);
+      exec(`rm -rf ${path}/${req.params.file}`);
       res.status(200).json({ status: 200 });
     } catch (error) {
       console.error(error);
