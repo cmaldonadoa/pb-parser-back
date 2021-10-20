@@ -7,17 +7,14 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 module.exports = {
-  saveMetadata: async (data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  saveMetadata: async (data) => {
+    await testConnection();
+
     const t = await db.transaction();
     try {
       await db.delete("DELETE FROM `file_metadata` WHERE `file_id` = ?", [
@@ -73,18 +70,13 @@ module.exports = {
       }
 
       await t.commit();
-      callback(null);
     } catch (error) {
       await t.rollback();
-      callback(error);
+      throw error;
     }
   },
-  getRuleMetadata: async (data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
-
+  getRuleMetadata: async (data) => {
+    await testConnection();
     try {
       const filters = await db.get(
         "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
@@ -168,7 +160,7 @@ module.exports = {
         ruleMap: filterMap,
       };
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
 };

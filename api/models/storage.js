@@ -7,17 +7,15 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 module.exports = {
-  saveFile: async (userId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  saveFile: async (userId, data) => {
+    await testConnection();
+
+    const t = await db.transaction();
     try {
       const typeId = await db
         .get("SELECT `model_type_id` FROM `model_type` WHERE `name` = ?", [
@@ -30,33 +28,41 @@ module.exports = {
         [data.name, typeId, userId]
       );
 
-      callback(null, result);
+      await t.commit();
+      return result;
     } catch (error) {
-      callback(error);
+      await t.rollback();
+      throw error;
     }
   },
-  getFiles: async (callback) => {
+  getFiles: async () => {
+    await testConnection();
+
     try {
       const result = await db.get(
         "SELECT `file_id`, f.`name` filename, r.`name` typename, `upload_date` FROM `file` f JOIN `model_type` r ON f.`model_type_id` = r.`model_type_id`",
         []
       );
-      callback(null, result);
+      return result;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getFile: async (data, callback) => {
+  getFile: async (data) => {
+    await testConnection();
+
     try {
       const result = await db
         .get("SELECT * FROM `file` WHERE `file_id` = ?", [data.id])
         .then((res) => res[0]);
-      callback(null, result);
+      return result;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getFileWithType: async (data, callback) => {
+  getFileWithType: async (data) => {
+    await testConnection();
+
     try {
       const result = await db
         .get("SELECT * FROM `file` WHERE `file_id` = ?", [data.fileId])
@@ -66,30 +72,37 @@ module.exports = {
         "SELECT `name` FROM `model_type` WHERE `model_type_id` = ?",
         [result.model_type_id]
       );
-      callback(null, { file: result, type });
+
+      return { file: result, type };
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
 
-  getFilesUser: async (userId, callback) => {
+  getFilesUser: async (userId) => {
+    await testConnection();
+
     try {
       const result = await db.get(
         "SELECT `file_id` FROM `file` WHERE `created_by` = ?",
         [userId]
       );
-      callback(null, result);
+      return result;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
 
-  deleteFile: async (fileId, callback) => {
+  deleteFile: async (fileId) => {
+    await testConnection();
+
+    const t = await db.transaction();
     try {
       await db.delete("DELETE FROM `file` WHERE `file_id` = ?", [fileId]);
-      callback(null);
+      await t.commit();
     } catch (error) {
-      callback(error);
+      await t.rollback();
+      throw error;
     }
   },
 };

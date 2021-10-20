@@ -327,14 +327,13 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 const manager = new Manager(db);
 
-const getRule = async (ruleId, callback) => {
+const getRule = async (ruleId) => {
   const result = { id: ruleId };
   try {
     const rule = await manager.getter.getRule(ruleId);
@@ -404,18 +403,15 @@ const getRule = async (ruleId, callback) => {
     }
 
     result.filters = filtersArray;
-    callback(null, result);
+    return result;
   } catch (error) {
-    callback(error);
+    throw error;
   }
 };
 
 module.exports = {
-  getRulesByGroupFull: async (groupId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesByGroupFull: async (groupId) => {
+    await testConnection();
 
     try {
       const rules = await manager.getter.getRulesByGroup(groupId);
@@ -426,48 +422,37 @@ module.exports = {
           allRules.push(result);
         });
       }
-      callback(null, allRules);
+      return allRules;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRulesByGroupHeader: async (groupId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesByGroupHeader: async (groupId) => {
+    await testConnection();
     try {
       const rows = await manager.getter.getRulesByGroup(groupId);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRuleHeader: async (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRuleHeader: async (ruleId) => {
+    await testConnection();
 
     try {
       const rows = await manager.getter.getRule(ruleId);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRuleFull: (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
-    return getRule(ruleId, callback);
+  getRuleFull: async (ruleId) => {
+    await testConnection();
+    const rule = await getRule(ruleId);
+    return rule;
   },
-  createRule: async (userId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  createRule: async (userId, data) => {
+    await testConnection();
 
     const t = await db.transaction();
 
@@ -516,17 +501,14 @@ module.exports = {
       }
 
       await t.commit();
-      callback(null, ruleId);
+      return ruleId;
     } catch (error) {
       await t.rollback();
-      callback(error);
+      throw error;
     }
   },
-  updateRule: async (ruleId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  updateRule: async (ruleId, data) => {
+    await testConnection();
 
     const t = await db.transaction();
 
@@ -601,70 +583,59 @@ module.exports = {
       }
 
       await t.commit();
-      callback(null);
     } catch (error) {
       await t.rollback();
-      callback(error);
+      throw error;
     }
   },
-  deleteRule: async (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  deleteRule: async (ruleId) => {
+    await testConnection();
+    const t = await db.transaction();
+
     try {
       await manager.deleter.deleteRule(ruleId);
-      callback(null);
+      await t.commit();
     } catch (error) {
-      callback(error);
+      await t.rollback();
+      throw error;
     }
   },
-  getGroups: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getGroups: async () => {
+    await testConnection();
     try {
       const rows = await manager.getter.getGroups();
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRegions: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRegions: async () => {
+    await testConnection();
 
     try {
       const rows = await db.get("SELECT * FROM `region`", []);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getCommunes: async (regionId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getCommunes: async (regionId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT `commune_id`, `name` FROM `commune` WHERE `region_id` = ?",
         [regionId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  createTender: async (userId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  createTender: async (userId, data) => {
+    await testConnection();
+
+    const t = await db.transaction();
 
     try {
       const buildingType = await db.get(
@@ -699,99 +670,89 @@ module.exports = {
         ]
       );
 
-      callback(null, tenderId);
+      await t.commit();
+      return tenderId;
     } catch (error) {
-      callback(error);
+      await t.rollback();
+      throw error;
     }
   },
-  getTenders: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTenders: async () => {
+    await testConnection();
 
     try {
       const rows = await db.get("SELECT `tender_id`, `name` FROM `tender`", []);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getTender: async (tenderId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTender: async (tenderId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT t.*, r.`name` building_type_name FROM `tender` t JOIN `building_type` r ON t.`building_type_id` = r.`building_type_id` WHERE `tender_id` = ?",
         [tenderId]
       );
-      callback(null, rows[0]);
+      return rows[0];
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getTendersUser: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTendersUser: async (userId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT `tender_id`, `name` FROM `tender` WHERE `created_by` = ?",
         [userId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRulesUser: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesUser: async (userId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT `rule_id`, `name` FROM `rule` WHERE `created_by` = ?",
         [userId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  removeTender: async (tenderId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  removeTender: async (tenderId) => {
+    await testConnection();
+    const t = await db.transaction();
 
     try {
       await db.get("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
-      callback(null);
+      await t.commit();
     } catch (error) {
-      callback(error);
+      await t.rollback();
+      throw error;
     }
   },
-  createGroup: async (groupName, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  createGroup: async (groupName) => {
+    await testConnection();
+
+    const t = await db.transaction();
 
     try {
       const groupId = await db.insert(
         "INSERT INTO `group`(`name`) VALUES (?)",
         [groupName]
       );
-      callback(null, groupId);
+      await t.commit();
+      return groupId;
     } catch (error) {
-      callback(error);
+      t.rollback();
+      throw error;
     }
   },
 };

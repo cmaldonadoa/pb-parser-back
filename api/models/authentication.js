@@ -7,64 +7,55 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 module.exports = {
-  getPassword: async (username, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getPassword: async (username) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT `password` FROM `user` WHERE `username` = ?",
         [username]
       );
-      callback(false, rows[0].password);
+      return rows[0].password;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getUserId: async (username, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getUserId: async (username) => {
+    await testConnection();
+
     try {
       const rows = await db.get(
         "SELECT `user_id` FROM `user` WHERE `username` = ?",
         [username]
       );
-      callback(false, rows[0].user_id);
+      return rows[0].user_id;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRole: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRole: async (userId) => {
+    await testConnection();
+
     try {
       const rows = await db.get(
         "SELECT `name` FROM `user_role` t JOIN `role` r ON t.`role_id` = r.`role_id` WHERE `user_id` = ?",
         [userId]
       );
-      callback(false, rows[0].name);
+      return rows[0].name;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
 
-  storeUser: async ({ username, hash, regionId, roleId }, callback) => {
-    if (!testConnection()) {
-      callback();
-      return;
-    }
+  storeUser: async ({ username, hash, regionId, roleId }) => {
+    await testConnection();
+
+    const t = await db.transaction();
     try {
       const userId = await db.insert(
         "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
@@ -75,9 +66,10 @@ module.exports = {
         [userId, roleId]
       );
 
-      callback();
+      await t.commit();
     } catch (error) {
-      callback();
+      await t.rollback();
+      throw error;
     }
   },
 };
