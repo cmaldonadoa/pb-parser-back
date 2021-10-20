@@ -3,76 +3,44 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 module.exports = {
-  authenticate: (req, res) => {
+  authenticate: async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      res.end();
+      res.status(400).end();
       return;
     }
 
     try {
-      model.getPassword(username, (err, hash) => {
-        if (err) {
-          res.end();
-          return;
-        }
-        bcrypt.compare(password, hash, (err, result) => {
-          if (err) {
-            res.end();
-            return;
-          }
-          if (result) {
-            model.getUserId(username, (err, id) => {
-              if (err) {
-                res.end();
-                return;
-              }
-              model.getRole(id, (err, role) => {
-                if (err) {
-                  res.end();
-                  return;
-                }
-                res.send(jwt.sign({ role, username }, process.env.JWT_KEY));
-              });
-            });
-          } else {
-            res.end();
-          }
-        });
-      });
+      const hash = await model.getPassword(username);
+      const result = await bcrypt.compare(password, hash);
+      if (result) {
+        const id = await model.getUserId(username);
+        const role = model.getRole(id);
+        res.status(200).send(jwt.sign({ role, username }, process.env.JWT_KEY));
+      } else {
+        res.status(400).end();
+      }
     } catch (error) {
-      console.log(error);
-      res.end();
+      console.error(error);
+      res.status(400).end();
       return;
     }
   },
-  register: (req, res) => {
+  register: async (req, res) => {
     const { regionId, username, password, roleId } = req.body;
 
     try {
-      bcrypt.genSalt(10, (err, salt) => {
-        if (err) {
-          res.end();
-          return;
-        }
-        bcrypt.hash(password, salt, (err, hash) => {
-          if (err) {
-            res.end();
-            return;
-          }
-          model.storeUser({ username, hash, regionId, roleId }, () => {
-            res.end();
-          });
-        });
-      });
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
+      await model.storeUser({ username, hash, regionId, roleId });
     } catch (error) {
-      console.log(error);
-      res.end();
+      console.error(error);
+      res.status(400).end();
       return;
     }
   },
-  adminOnly: (req, res, next) => {
+  adminOnly: async (req, res, next) => {
     const token = req.header("Authorization");
     if (!token) {
       res.status(401).end();
@@ -80,64 +48,38 @@ module.exports = {
     }
 
     try {
-      jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-        if (err) {
-          res.status(401).end();
-          return;
-        }
-
-        if (decoded.role !== "ADMIN") {
-          res.status(401).end();
-          return;
-        }
-
-        model.getUserId(decoded.username, (err, id) => {
-          if (err) {
-            res.status(401).end();
-            return;
-          }
-
-          req.userId = id;
-          next();
-        });
-      });
+      const decoded = jwt.verify(token, process.env.JWT_KEY);
+      if (decoded.role !== "ADMIN") {
+        res.status(401).end();
+        return;
+      }
+      const id = await model.getUserId(decoded.username);
+      req.userId = id;
+      next();
     } catch (error) {
-      console.log(error);
-      res.end();
+      console.error(error);
+      res.status(400).end();
       return;
     }
   },
-  reviewerOnly: (req, res, next) => {
+  reviewerOnly: async (req, res, next) => {
     const token = req.header("Authorization");
     if (!token) {
       res.status(401).end();
       return;
     }
     try {
-      jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-        if (err) {
-          res.status(401).end();
-          return;
-        }
-
-        if (decoded.role !== "REVIEWER") {
-          res.status(401).end();
-          return;
-        }
-
-        model.getUserId(decoded.username, (err, id) => {
-          if (err) {
-            res.status(401).end();
-            return;
-          }
-
-          req.userId = id;
-          next();
-        });
-      });
+      const decoded = jwt.verify(token, process.env.JWT_KEY);
+      if (decoded.role !== "REVIEWER") {
+        res.status(401).end();
+        return;
+      }
+      const id = await model.getUserId(decoded.username);
+      req.userId = id;
+      next();
     } catch (error) {
-      console.log(error);
-      res.end();
+      console.error(error);
+      res.status(400).end();
       return;
     }
   },

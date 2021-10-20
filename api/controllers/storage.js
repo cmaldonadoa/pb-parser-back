@@ -1,13 +1,9 @@
-var exec = require("child_process").exec;
+const util = require("util");
+var exec = util.promisify(require("child_process").exec);
 const model = require("../models/storage.js");
 
-const errorResponse = (filename, variant, error) => {
-  console.log(`\x1b[41m[${filename}] ERROR ${variant}:\x1b[0m`, error);
-  return true;
-};
-
 module.exports = {
-  upload: (req, res) => {
+  upload: async (req, res) => {
     const file = req.files ? req.files.file : null;
     const type = req.body.type;
 
@@ -37,54 +33,49 @@ module.exports = {
     const path = `${__dirname}/../../files`;
     const zipped = extension === "zip" || extension === "ifczip";
 
-    model.saveFile(req.userId, { name: filename, type }, (err, id) =>
-      err
-        ? errorResponse(filename, "Saving the file to DB", err) &&
-          res.status(500).json({ status: 500 })
-        : file.mv(`${path}/${id}/${file.name}`, (err) =>
-            err // Error creating the file
-              ? errorResponse(filename, "Moving the file", err) &&
-                res.status(500).json({ status: 500 })
-              : zipped
-              ? exec(
-                  `unzip -p ${path}/${id}/${file.name} > ${filename}.ifc && rm -f ${file.name}`,
-                  (err, stdout, stderr) =>
-                    err
-                      ? errorResponse(id, "Unzipping", err) &&
-                        res.status(500).json({ status: 500 })
-                      : res.status(200).json({ status: 200, id: id })
-                )
-              : res.status(200).json({ status: 200, id: id })
-          )
-    );
+    try {
+      const id = await model.saveFile(req.userId, { name: filename, type });
+      await file.mv(`${path}/${id}/${file.name}`);
+      if (zipped) {
+        await exec(
+          `unzip -p ${path}/${id}/${file.name} > ${filename}.ifc && rm -f ${file.name}`
+        );
+      }
+      res.status(200).json({ status: 200, id: id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchFiles: (req, res) => {
-    model.getFiles((err, data) =>
-      err
-        ? errorResponse("FILES", "Fetching files", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, files: data })
-    );
+  fetchFiles: async (req, res) => {
+    try {
+      const data = await model.getFiles();
+      res.status(200).json({ status: 200, files: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
-  fetchFilesUser: (req, res) => {
-    model.getFilesUser(req.userId, (err, data) =>
-      err
-        ? errorResponse("FILES", "Fetching files", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, files: data })
-    );
+  fetchFilesUser: async (req, res) => {
+    try {
+      const data = model.getFilesUser(req.userId);
+      res.status(200).json({ status: 200, files: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
-  removeFile: (req, res) => {
-    model.deleteFile(req.params.file, (err) => {
+  removeFile: async (req, res) => {
+    try {
+      await model.deleteFile(req.params.file);
       const path = `${__dirname}/../../files`;
-      exec(`rm -rf ${path}/${req.params.file}`, (err, stdout, stderr) =>
-        err
-          ? errorResponse("FILES", "removing file", err) &&
-            res.status(500).json({ status: 500 })
-          : res.status(200).json({ status: 200 })
-      );
-    });
+      await exec(`rm -rf ${path}/${req.params.file}`);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 };
