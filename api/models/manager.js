@@ -417,10 +417,8 @@ module.exports = {
       const rules = await manager.getter.getRulesByGroup(groupId);
       const allRules = [];
       for await (const rule of rules) {
-        await getRule(rule.rule_id, (err, result) => {
-          if (err) throw err;
-          allRules.push(result);
-        });
+        const result = await getRule(rule.rule_id);
+        allRules.push(result);
       }
       return allRules;
     } catch (error) {
