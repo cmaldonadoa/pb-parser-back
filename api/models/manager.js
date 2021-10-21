@@ -177,6 +177,17 @@ class Manager {
           .then((res) => res.map((e) => e.name));
         return result;
       },
+      getBuildingTypes: async (ruleId) => {
+        const result = await this.sqlManager
+          .get(
+            "SELECT e.`name` FROM `building_type` e " +
+              "JOIN `rule_building_type` r ON e.`building_type_id` = r.`building_type_id` " +
+              "WHERE r.`rule_id` = ?",
+            [ruleId]
+          )
+          .then((res) => res.map((e) => e.name));
+        return result;
+      },
       getFilters: async (ruleId) => {
         const result = await this.sqlManager.get(
           "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
@@ -343,6 +354,9 @@ const getRule = async (ruleId) => {
 
     const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
+
+    const buildingTypes = await manager.getter.getBuildingTypes(ruleId);
+    result.buildingTypes = buildingTypes;
 
     const filters = await manager.getter.getFilters(ruleId);
     const filtersArray = [];
