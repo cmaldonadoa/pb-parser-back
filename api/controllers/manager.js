@@ -66,8 +66,8 @@ module.exports = {
   },
 
   createRuleMultiple: async (req, res) => {
-    const rules = req.body.rules;
-    const groupId = req.body.group;
+    const rules = req.body;
+    const groupId = req.params.group;
 
     try {
       for await (const rule of rules) {
