@@ -168,9 +168,9 @@ module.exports = {
     await db.transaction();
     try {
       await db.delete("DELETE FROM `result` WHERE `file_id` = ?", [fileId]);
-      db.commit();
+      await db.commit();
     } catch (error) {
-      db.rollback();
+      await db.rollback();
       throw error;
     }
   },
@@ -198,9 +198,55 @@ module.exports = {
           );
         }
       }
-      db.commit();
+      await db.commit();
     } catch (error) {
-      db.rollback();
+      await db.rollback();
+      throw error;
+    }
+  },
+  getResults: async (fileId) => {
+    await testConnection();
+    try {
+      const results = await db.get(
+        "SELECT `result_id`, `rule_id`, `value` FROM `result` WHERE `file_id` = ?",
+        [fileId]
+      );
+
+      let data = [];
+      for await (const result of results) {
+        const rule = await db
+          .get("SELECT `name`, `description` FROM `rule` WHERE `rule_id` = ?", [
+            result.rule_id,
+          ])
+          .then((res) => res[0]);
+
+        const groupId = await db
+          .get("SELECT `group_id` FROM `rule_group` WHERE `rule_id` = ?", [
+            result.rule_id,
+          ])
+          .then((res) => res[0].group_id);
+
+        const groupName = await db
+          .get("SELECT `name` FROM `group` WHERE `group_id` = ?", [groupId])
+          .then((res) => res[0].name);
+
+        const values = await db
+          .get("SELECT `value` FROM `result_value` WHERE `result_id` = ?", [
+            result.result_id,
+          ])
+          .then((res) => res.map((v) => v.value));
+
+        data.push({
+          name: rule.name,
+          description: rule.description || "",
+          group: groupName,
+          bit: parseInt(result.value.toString("hex")),
+          values: values || [],
+        });
+      }
+
+      return data;
+    } catch (error) {
       throw error;
     }
   },

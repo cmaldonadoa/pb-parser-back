@@ -763,7 +763,7 @@ module.exports = {
       await db.commit();
       return groupId;
     } catch (error) {
-      db.rollback();
+      await db.rollback();
       throw error;
     }
   },

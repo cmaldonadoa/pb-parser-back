@@ -79,13 +79,11 @@ class SqlManager {
   }
 
   async commit() {
-    await this._transaction.commit();
-    this._transaction = null;
+    await this._transaction.commit().then((_) => (this._transaction = null));
   }
 
   async rollback() {
-    await this._transaction.rollback();
-    this._transaction = null;
+    await this._transaction.rollback().then((_) => (this._transaction = null));
   }
 }
 

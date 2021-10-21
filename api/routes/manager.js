@@ -5,7 +5,7 @@ module.exports = function (app) {
   app.put("/rules/:rule", adminOnly, controller.updateRule);
   app.delete("/rules/:rule", adminOnly, controller.deleteRule);
   app.post("/rules", adminOnly, controller.createRule);
-  app.post("/rules-multiple", adminOnly, controller.createRuleMultiple);
+  app.post("/rules-multiple/:group", adminOnly, controller.createRuleMultiple);
 
   app.get("/rules/:group/:rule", controller.fetchRule);
   app.get("/rules/:group", controller.fetchRules);
