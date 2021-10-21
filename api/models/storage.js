@@ -15,7 +15,7 @@ module.exports = {
   saveFile: async (userId, data) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
     try {
       const typeId = await db
         .get("SELECT `model_type_id` FROM `model_type` WHERE `name` = ?", [
@@ -28,10 +28,10 @@ module.exports = {
         [data.name, typeId, userId]
       );
 
-      await t.commit();
+      await db.commit();
       return result;
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
@@ -96,12 +96,12 @@ module.exports = {
   deleteFile: async (fileId) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
     try {
       await db.delete("DELETE FROM `file` WHERE `file_id` = ?", [fileId]);
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },

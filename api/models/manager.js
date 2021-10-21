@@ -452,7 +452,7 @@ module.exports = {
   createRule: async (userId, data) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       const ruleId = await manager.creator.newRule(
@@ -498,17 +498,17 @@ module.exports = {
         }
       }
 
-      await t.commit();
+      await db.commit();
       return ruleId;
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
   updateRule: async (ruleId, data) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       await manager.updater.updateRule(
@@ -580,21 +580,21 @@ module.exports = {
         }
       }
 
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
   deleteRule: async (ruleId) => {
     await testConnection();
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       await manager.deleter.deleteRule(ruleId);
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
@@ -633,7 +633,7 @@ module.exports = {
   createTender: async (userId, data) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       const buildingType = await db.get(
@@ -668,10 +668,10 @@ module.exports = {
         ]
       );
 
-      await t.commit();
+      await db.commit();
       return tenderId;
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
@@ -726,30 +726,30 @@ module.exports = {
   },
   removeTender: async (tenderId) => {
     await testConnection();
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       await db.get("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
   createGroup: async (groupName) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       const groupId = await db.insert(
         "INSERT INTO `group`(`name`) VALUES (?)",
         [groupName]
       );
-      await t.commit();
+      await db.commit();
       return groupId;
     } catch (error) {
-      t.rollback();
+      db.rollback();
       throw error;
     }
   },

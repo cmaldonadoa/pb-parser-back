@@ -55,7 +55,7 @@ module.exports = {
   storeUser: async ({ username, hash, regionId, roleId }) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
     try {
       const userId = await db.insert(
         "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
@@ -66,9 +66,9 @@ module.exports = {
         [userId, roleId]
       );
 
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },

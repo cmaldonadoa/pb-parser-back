@@ -12,12 +12,7 @@ class SqlManager {
         port: process.env.DB_PORT,
       }
     );
-  }
-
-  executeQuery(qry) {
-    return this._sequelize.query(qry, {
-      type: QueryTypes.SELECT,
-    });
+    this._transaction = null;
   }
 
   get(qry, vals) {
@@ -26,18 +21,24 @@ class SqlManager {
         query: qry,
         values: vals,
       },
-      { type: QueryTypes.SELECT }
+      {
+        type: QueryTypes.SELECT,
+        ...(!!this._transaction && { transaction: this._transaction }),
+      }
     );
   }
 
-  async insert(qry, vals) {
+  insert(qry, vals) {
     return this._sequelize
       .query(
         {
           query: qry,
           values: vals,
         },
-        { type: QueryTypes.INSERT }
+        {
+          type: QueryTypes.INSERT,
+          ...(!!this._transaction && { transaction: this._transaction }),
+        }
       )
       .then((res) => res[0]);
   }
@@ -48,7 +49,10 @@ class SqlManager {
         query: qry,
         values: vals,
       },
-      { type: QueryTypes.UPDATE }
+      {
+        type: QueryTypes.UPDATE,
+        ...(!!this._transaction && { transaction: this._transaction }),
+      }
     );
   }
 
@@ -58,16 +62,30 @@ class SqlManager {
         query: qry,
         values: vals,
       },
-      { type: QueryTypes.DELETE }
+      {
+        type: QueryTypes.DELETE,
+        ...(!!this._transaction && { transaction: this._transaction }),
+      }
     );
   }
 
   ping() {
-    return this._sequelize.authenticate();
+    return this._sequelize.authenticate({ logging: false });
   }
 
-  transaction() {
-    return this._sequelize.transaction();
+  async transaction() {
+    const t = await this._sequelize.transaction();
+    this._transaction = t;
+  }
+
+  async commit() {
+    await this._transaction.commit();
+    this._transaction = null;
+  }
+
+  async rollback() {
+    await this._transaction.rollback();
+    this._transaction = null;
   }
 }
 

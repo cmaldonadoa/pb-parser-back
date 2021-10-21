@@ -15,7 +15,7 @@ module.exports = {
   saveMetadata: async (data) => {
     await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
     try {
       await db.delete("DELETE FROM `file_metadata` WHERE `file_id` = ?", [
         data.fileId,
@@ -69,9 +69,9 @@ module.exports = {
         }
       }
 
-      await t.commit();
+      await db.commit();
     } catch (error) {
-      await t.rollback();
+      await db.rollback();
       throw error;
     }
   },
@@ -165,18 +165,18 @@ module.exports = {
   },
   deleteResults: async (fileId) => {
     await testConnection();
-    const t = await db.transaction();
+    await db.transaction();
     try {
       await db.delete("DELETE FROM `result` WHERE `file_id` = ?", [fileId]);
-      t.commit();
+      db.commit();
     } catch (error) {
-      t.rollback();
+      db.rollback();
       throw error;
     }
   },
   saveResult: async (fileId, ruleId, result) => {
     await testConnection();
-    const t = await db.transaction();
+    await db.transaction();
     try {
       const bit = result === false ? 0 : 1;
 
@@ -198,9 +198,9 @@ module.exports = {
           );
         }
       }
-      t.commit();
+      db.commit();
     } catch (error) {
-      t.rollback();
+      db.rollback();
       throw error;
     }
   },
