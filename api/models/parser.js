@@ -163,4 +163,45 @@ module.exports = {
       throw error;
     }
   },
+  deleteResults: async (fileId) => {
+    await testConnection();
+    const t = await db.transaction();
+    try {
+      await db.delete("DELETE FROM `result` WHERE `file_id` = ?", [fileId]);
+      t.commit();
+    } catch (error) {
+      t.rollback();
+      throw error;
+    }
+  },
+  saveResult: async (fileId, ruleId, result) => {
+    await testConnection();
+    const t = await db.transaction();
+    try {
+      const bit = result === false ? 0 : 1;
+
+      const id = await db.insert(
+        "INSERT INTO `result` (`file_id`, `rule_id`, `value`) VALUES (?, ?, ?)",
+        [fileId, ruleId, bit]
+      );
+
+      result =
+        !Array.isArray(result) && typeof result !== "boolean"
+          ? [result]
+          : result;
+
+      if (Array.isArray(result)) {
+        for await (const value of result) {
+          await db.insert(
+            "INSERT INTO `result_value` (`result_id`, `value`) VALUES (?, ?)",
+            [id, value]
+          );
+        }
+      }
+      t.commit();
+    } catch (error) {
+      t.rollback();
+      throw error;
+    }
+  },
 };

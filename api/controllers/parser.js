@@ -41,6 +41,8 @@ module.exports = {
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
       const response = {};
 
+      await parser.deleteResults(fileId);
+
       for await (const groupId of groupIds) {
         const results = {};
         let rules = [];
@@ -77,10 +79,10 @@ module.exports = {
             filter: ruleMap,
           };
 
-          if (Object.keys(results).length === rules.length) {
-            response[groupId] = results;
-          }
+          await parser.saveResult(fileId, ruleId, result);
         }
+
+        response[groupId] = results;
       }
 
       res.status(200).json({ status: 200, data: response });
