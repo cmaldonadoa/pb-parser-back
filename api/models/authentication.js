@@ -72,4 +72,16 @@ module.exports = {
       throw error;
     }
   },
+
+  getUsername: async ({ userId }) => {
+    await testConnection();
+    try {
+      const result = await db
+        .get("SELECT `username` FROM `user` WHERE `user_id` = ?", [userId])
+        .then((res) => res[0].username);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
 };

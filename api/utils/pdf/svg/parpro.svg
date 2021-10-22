@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="90" height="88" viewBox="0 0 90 88">
+  <g id="Grupo_3" data-name="Grupo 3" transform="translate(-1462 -29)">
+    <rect id="Rectángulo_36" data-name="Rectángulo 36" width="90" height="88" rx="14" transform="translate(1462 29)" fill="#0059d6"/>
+    <g id="Grupo_2" data-name="Grupo 2" transform="translate(1483.295 46.991)">
+      <line id="Línea_3" data-name="Línea 3" y1="34.583" x2="33.271" transform="translate(13.809)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="15" opacity="0.6"/>
+      <line id="Línea_2" data-name="Línea 2" x2="13.542" y2="13.37" transform="translate(0 21.393)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="15" opacity="0.6"/>
+    </g>
+    <text id="PARPRO" transform="translate(1472 109)" fill="#fff" font-size="16" font-family="Verdana" letter-spacing="0.07em"><tspan x="0" y="0">PARPRO</tspan></text>
+  </g>
+</svg>

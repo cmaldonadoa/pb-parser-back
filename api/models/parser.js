@@ -174,15 +174,15 @@ module.exports = {
       throw error;
     }
   },
-  saveResult: async (fileId, ruleId, result) => {
+  saveResult: async (fileId, ruleId, tenderId, result) => {
     await testConnection();
     await db.transaction();
     try {
       const bit = result === false ? 0 : 1;
 
       const id = await db.insert(
-        "INSERT INTO `result` (`file_id`, `rule_id`, `value`) VALUES (?, ?, ?)",
-        [fileId, ruleId, bit]
+        "INSERT INTO `result` (`file_id`, `rule_id`, `tender_id`, `value`) VALUES (?, ?, ?, ?)",
+        [fileId, ruleId, tenderId, bit]
       );
 
       result =
@@ -208,9 +208,10 @@ module.exports = {
     await testConnection();
     try {
       const results = await db.get(
-        "SELECT `result_id`, `rule_id`, `value` FROM `result` WHERE `file_id` = ?",
+        "SELECT `result_id`, `rule_id`, `tender_id`, `value` FROM `result` WHERE `file_id` = ?",
         [fileId]
       );
+      const tenderId = results[0].tender_id;
 
       let data = [];
       for await (const result of results) {
@@ -245,7 +246,7 @@ module.exports = {
         });
       }
 
-      return data;
+      return { results: data, tenderId };
     } catch (error) {
       throw error;
     }
