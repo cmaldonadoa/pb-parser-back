@@ -185,7 +185,7 @@ module.exports = {
     const tenderId = parseInt(req.params.tender);
 
     try {
-      await model.updateTender(tenderId);
+      await model.updateTender(tenderId, req.body);
       res.status(200).json({ status: 200 });
     } catch (error) {
       console.error(error);

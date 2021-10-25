@@ -750,7 +750,7 @@ module.exports = {
       throw error;
     }
   },
-  updateTender: async (tenderId) => {
+  updateTender: async (tenderId, data) => {
     await testConnection();
 
     await db.transaction();
