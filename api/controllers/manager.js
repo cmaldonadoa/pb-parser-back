@@ -12,7 +12,7 @@ module.exports = {
     }
   },
   updateRule: async (req, res) => {
-    const ruleId = req.params.rule;
+    const ruleId = parseInt(req.params.rule);
     try {
       await model.updateRule(ruleId, req.body);
       res.status(200).json({ status: 200 });
@@ -22,7 +22,7 @@ module.exports = {
     }
   },
   fetchRules: async (req, res) => {
-    const groupId = req.params.group;
+    const groupId = parseInt(req.params.group);
     try {
       const data = await model.getRulesByGroupHeader(parseInt(groupId));
       res.status(200).json({ status: 200, rules: data });
@@ -32,7 +32,7 @@ module.exports = {
     }
   },
   fetchRule: async (req, res) => {
-    const ruleId = req.params.rule;
+    const ruleId = parseInt(req.params.rule);
     try {
       const data = await model.getRuleFull(parseInt(ruleId));
       res.status(200).json({ status: 200, rule: data });
@@ -42,7 +42,7 @@ module.exports = {
     }
   },
   deleteRule: async (req, res) => {
-    const ruleId = req.params.rule;
+    const ruleId = parseInt(req.params.rule);
     try {
       await model.deleteRule(ruleId);
       res.status(200).json({ status: 200 });
@@ -67,7 +67,7 @@ module.exports = {
 
   createRuleMultiple: async (req, res) => {
     const rules = req.body;
-    const groupId = req.params.group;
+    const groupId = parseInt(req.params.group);
 
     try {
       for await (const rule of rules) {
@@ -113,8 +113,10 @@ module.exports = {
     }
   },
   fetchCommunes: async (req, res) => {
+    const regionId = parseInt(req.params.region);
+
     try {
-      const data = await model.getCommunes();
+      const data = await model.getCommunes(regionId);
       res.status(200).json({ status: 200, communes: data });
     } catch (error) {
       console.error(error);
@@ -142,7 +144,7 @@ module.exports = {
     }
   },
   fetchTender: async (req, res) => {
-    const tenderId = req.params.tender;
+    const tenderId = parseInt(req.params.tender);
     try {
       const data = await model.getTender(tenderId);
       res.status(200).json({ status: 200, tender: data });
@@ -170,9 +172,20 @@ module.exports = {
     }
   },
   deleteTender: async (req, res) => {
-    const tenderId = req.params.tender;
+    const tenderId = parseInt(req.params.tender);
     try {
       await model.removeTender(tenderId);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
+  },
+  updateTender: async (req, res) => {
+    const tenderId = parseInt(req.params.tender);
+
+    try {
+      await model.updateTender(tenderId);
       res.status(200).json({ status: 200 });
     } catch (error) {
       console.error(error);

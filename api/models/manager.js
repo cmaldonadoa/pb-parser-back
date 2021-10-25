@@ -743,7 +743,51 @@ module.exports = {
     await db.transaction();
 
     try {
-      await db.get("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
+      await db.delete("DELETE FROM `tender` WHERE `tender_id` = ?", [tenderId]);
+      await db.commit();
+    } catch (error) {
+      await db.rollback();
+      throw error;
+    }
+  },
+  updateTender: async (tenderId) => {
+    await testConnection();
+
+    await db.transaction();
+
+    try {
+      const buildingType = await db.get(
+        "SELECT `building_type_id` FROM `building_type` WHERE `name` = ?",
+        [data.type]
+      );
+
+      await db.update(
+        "UPDATE `tender` SET " +
+          "`name` = ?,`region_id` = ?, `commune_id` = ?, `address` = ?, `property_role` = ?, `constructability_coef` = ?, " +
+          "`soil_occupancy_coef` = ?, `building_type_id` = ?, `angle` = ?, `vulnerable` = ?, `handicap_vulnerable` = ?, " +
+          "`medios_1` = ?, `handicap_medios_1` = ?, `medios_2` = ?, `handicap_medios_2` = ?, `total` = ? " +
+          "WHERE `tender_id` = ?",
+        [
+          data.name,
+          data.region,
+          data.commune,
+          data.address,
+          data.propertyRole,
+          data.constructabilityCoef,
+          data.soilOccupancyCoef,
+          buildingType[0].building_type_id,
+          data.angle,
+          data.vulnerable,
+          data.isHandicapVulnerable ? data.handicapVulnerable : 0,
+          data.medios1,
+          data.isHandicapMedios1 ? data.handicapMedios1 : 0,
+          data.medios2,
+          data.isHandicapMedios2 ? data.handicapMedios2 : 0,
+          data.total,
+          tenderId,
+        ]
+      );
+
       await db.commit();
     } catch (error) {
       await db.rollback();

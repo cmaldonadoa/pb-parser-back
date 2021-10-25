@@ -17,6 +17,7 @@ module.exports = function (app) {
   app.get("/regions", controller.fetchRegions);
   app.get("/regions/:region", controller.fetchCommunes);
 
+  app.put("/tenders/:tender", adminOnly, controller.updateTender);
   app.post("/tenders", adminOnly, controller.createTender);
   app.delete("/tenders/:tender", adminOnly, controller.deleteTender);
   app.get("/tenders/:tender", controller.fetchTender);
