@@ -8,14 +8,14 @@ class Manager {
     this.creator = {
       newRule: async (userId, name, formula, description) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO [rule] ([name], [formula], [description], [created_by]) VALUES (?, ?, ?, ?)",
+          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by]) VALUES (?, ?, ?, ?)",
           [name, formula, description, userId]
         );
         return result;
       },
       linkRuleGroup: async (ruleId, groupId) => {
         await this.sqlManager.insert(
-          "INSERT INTO [rule_group] ([rule_id], [group_id]) VALUES (?, ?)",
+          "INSERT INTO [ifc_bim].[rule_group] ([rule_id], [group_id]) VALUES (?, ?)",
           [ruleId, groupId]
         );
       },
@@ -29,7 +29,7 @@ class Manager {
             .then((res) => res[0].model_type_id);
 
           await this.sqlManager.insert(
-            "INSERT INTO [rule_model_type] ([rule_id], [model_type_id]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[rule_model_type] ([rule_id], [model_type_id]) VALUES (?, ?)",
             [ruleId, modelTypeId]
           );
         }
@@ -44,14 +44,14 @@ class Manager {
             .then((res) => res[0].building_type_id);
 
           await this.sqlManager.insert(
-            "INSERT INTO [rule_building_type] ([rule_id], [building_type_id]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[rule_building_type] ([rule_id], [building_type_id]) VALUES (?, ?)",
             [ruleId, buildingTypeId]
           );
         }
       },
       newFilter: async (ruleId, index, name) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO [filter] ([rule_id], [index], [name]) VALUES (?, ?, ?)",
+          "INSERT INTO [ifc_bim].[filter] ([rule_id], [index], [name]) VALUES (?, ?, ?)",
           [ruleId, index, name]
         );
         return result;
@@ -67,14 +67,14 @@ class Manager {
             entityId = entities[0].entity_id;
           } else {
             const result = await this.sqlManager.insert(
-              "INSERT INTO [entity] ([name]) VALUES (?)",
+              "INSERT INTO [ifc_bim].[entity] ([name]) VALUES (?)",
               [entity]
             );
             entityId = result;
           }
 
           await this.sqlManager.insert(
-            "INSERT INTO [filter_entity] ([filter_id], [entity_id]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[filter_entity] ([filter_id], [entity_id]) VALUES (?, ?)",
             [filterId, entityId]
           );
         }
@@ -90,21 +90,21 @@ class Manager {
             spaceId = spaces[0].space_id;
           } else {
             const result = await this.sqlManager.insert(
-              "INSERT INTO [space] ([name]) VALUES (?)",
+              "INSERT INTO [ifc_bim].[space] ([name]) VALUES (?)",
               [space]
             );
             spaceId = result;
           }
 
           await this.sqlManager.insert(
-            "INSERT INTO [filter_space] ([filter_id], [space_id]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[filter_space] ([filter_id], [space_id]) VALUES (?, ?)",
             [filterId, spaceId]
           );
         }
       },
       newConstraint: async (operationId, onId, filterId, attribute, index) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO [constraint] ([operation_id], [on_id], [filter_id], [attribute], [index]) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO [ifc_bim].[constraint] ([operation_id], [on_id], [filter_id], [attribute], [index]) VALUES (?, ?, ?, ?, ?)",
           [operationId, onId, filterId, attribute, index]
         );
         return result;
@@ -112,17 +112,17 @@ class Manager {
       newSpecificConstraint: async (constraintId, constraintSpecification) => {
         if (constraintSpecification.type === "PSET_QTO") {
           await this.sqlManager.insert(
-            "INSERT INTO [pset_constraint] ([constraint_id], [name_regexp]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[pset_constraint] ([constraint_id], [name_regexp]) VALUES (?, ?)",
             [constraintId, constraintSpecification.pset]
           );
         } else if (constraintSpecification.type === "LOCATION") {
           await this.sqlManager.insert(
-            "INSERT INTO [location_constraint] ([constraint_id]) VALUES (?)",
+            "INSERT INTO [ifc_bim].[location_constraint] ([constraint_id]) VALUES (?)",
             [constraintId]
           );
         } else {
           await this.sqlManager.insert(
-            "INSERT INTO [attribute_constraint] ([constraint_id]) VALUES (?)",
+            "INSERT INTO [ifc_bim].[attribute_constraint] ([constraint_id]) VALUES (?)",
             [constraintId]
           );
         }
@@ -130,7 +130,7 @@ class Manager {
       newExpectedValues: async (valuesList, constraintId) => {
         for await (const value of valuesList) {
           await this.sqlManager.insert(
-            "INSERT INTO [expected_value] ([constraint_id], [value]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[expected_value] ([constraint_id], [value]) VALUES (?, ?)",
             [constraintId, value.toString()]
           );
         }
@@ -254,13 +254,13 @@ class Manager {
     this.updater = {
       updateRule: async (ruleId, name, formula, description) => {
         await this.sqlManager.update(
-          "UPDATE [rule] SET [name] = ?, [formula] = ?, [description] = ? WHERE [rule_id] = ?",
+          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ? WHERE [rule_id] = ?",
           [name, formula, description, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, index) => {
         await this.sqlManager.update(
-          "UPDATE [filter] SET [index] = ? WHERE [filter_id] = ? AND [rule_id] = ?",
+          "UPDATE [ifc_bim].[filter] SET [index] = ? WHERE [filter_id] = ? AND [rule_id] = ?",
           [index, filterId, ruleId]
         );
       },
@@ -272,7 +272,7 @@ class Manager {
         index
       ) => {
         await this.sqlManager.update(
-          "UPDATE [constraint] SET [operation_id] = ?, [on_id] = ?, [attribute] = ?, [index] = ? WHERE [constraint_id] = ?",
+          "UPDATE [ifc_bim].[constraint] SET [operation_id] = ?, [on_id] = ?, [attribute] = ?, [index] = ? WHERE [constraint_id] = ?",
           [operationId, onId, attribute, index, constraintId]
         );
       },
@@ -661,7 +661,7 @@ module.exports = {
       );
 
       const tenderId = await db.insert(
-        "INSERT INTO [tender](" +
+        "INSERT INTO [ifc_bim].[tender](" +
           "[name],[region_id],[commune_id],[address],[property_role],[constructability_coef]," +
           "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
           "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
@@ -772,7 +772,7 @@ module.exports = {
       );
 
       await db.update(
-        "UPDATE [tender] SET " +
+        "UPDATE [ifc_bim].[tender] SET " +
           "[name] = ?,[region_id] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
           "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
@@ -811,7 +811,7 @@ module.exports = {
 
     try {
       const groupId = await db.insert(
-        "INSERT INTO [group]([name]) VALUES (?)",
+        "INSERT INTO [ifc_bim].[group]([name]) VALUES (?)",
         [groupName]
       );
       await db.commit();

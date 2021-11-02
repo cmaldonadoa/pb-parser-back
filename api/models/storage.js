@@ -25,7 +25,7 @@ module.exports = {
         .then((res) => res[0].model_type_id);
 
       const result = await db.insert(
-        "INSERT INTO [file] ([name], [model_type_id], [created_by]) VALUES (?, ?, ?)",
+        "INSERT INTO [ifc_bim].[file] ([name], [model_type_id], [created_by]) VALUES (?, ?, ?)",
         [data.name, typeId, userId]
       );
 

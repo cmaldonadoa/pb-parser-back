@@ -36,12 +36,12 @@ module.exports = {
 
           if (oldFilterMetadata.length > 0) {
             await db.update(
-              "UPDATE [file_metadata_filter] SET [min_distance] = ? WHERE [file_id] = ? AND [filter_id] = ?",
+              "UPDATE [ifc_bim].[file_metadata_filter] SET [min_distance] = ? WHERE [file_id] = ? AND [filter_id] = ?",
               [distance, data.fileId, filterId]
             );
           } else {
             await db.insert(
-              "INSERT INTO [file_metadata_filter]([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
+              "INSERT INTO [ifc_bim].[file_metadata_filter]([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
               [data.fileId, filterId, distance]
             );
           }
@@ -55,13 +55,13 @@ module.exports = {
                 : [values[k]];
 
               const metadataId = await db.insert(
-                "INSERT INTO [file_metadata]([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
+                "INSERT INTO [ifc_bim].[file_metadata]([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
                 [data.fileId, constraintId, guid]
               );
 
               for await (const singleValue of valueList) {
                 await db.insert(
-                  "INSERT INTO [metadata_value]([file_metadata_id], [value]) VALUES (?, ?)",
+                  "INSERT INTO [ifc_bim].[metadata_value]([file_metadata_id], [value]) VALUES (?, ?)",
                   [metadataId, singleValue]
                 );
               }
@@ -184,7 +184,7 @@ module.exports = {
       const bit = result === false ? 0 : 1;
 
       const id = await db.insert(
-        "INSERT INTO [result] ([file_id], [rule_id], [tender_id], [value]) VALUES (?, ?, ?, ?)",
+        "INSERT INTO [ifc_bim].[result] ([file_id], [rule_id], [tender_id], [value]) VALUES (?, ?, ?, ?)",
         [fileId, ruleId, tenderId, bit]
       );
 
@@ -196,7 +196,7 @@ module.exports = {
       if (Array.isArray(result)) {
         for await (const value of result) {
           await db.insert(
-            "INSERT INTO [result_value] ([result_id], [value]) VALUES (?, ?)",
+            "INSERT INTO [ifc_bim].[result_value] ([result_id], [value]) VALUES (?, ?)",
             [id, value]
           );
         }

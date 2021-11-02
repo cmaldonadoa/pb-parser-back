@@ -58,11 +58,11 @@ module.exports = {
     await db.transaction();
     try {
       const userId = await db.insert(
-        "INSERT INTO [user] ([username], [password], [region_id]) VALUES (?, ?, ?)",
+        "INSERT INTO [ifc_bim].[user] ([username], [password], [region_id]) VALUES (?, ?, ?)",
         [username, hash, regionId]
       );
       await db.insert(
-        "INSERT INTO [user_role] ([user_id], [role_id]) VALUES (?, ?)",
+        "INSERT INTO [ifc_bim].[user_role] ([user_id], [role_id]) VALUES (?, ?)",
         [userId, roleId]
       );
 
