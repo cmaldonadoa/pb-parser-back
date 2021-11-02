@@ -1,179 +1,204 @@
-var exec = require("child_process").exec;
+var exec = require("child_process").execSync;
 const model = require("../models/manager.js");
 
-const errorResponse = (filename, variant, error) => {
-  console.log(`\x1b[41m[${filename}] ERROR ${variant}:\x1b[0m`, error);
-  return true;
-};
-
 module.exports = {
-  createRule: (req, res) => {
-    model.createRule(req.userId, req.body, (err, ruleId) =>
-      err
-        ? errorResponse("Rules", "Creating a rule", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, ruleId })
-    );
+  createRule: async (req, res) => {
+    try {
+      const ruleId = await model.createRule(req.userId, req.body);
+      res.status(200).json({ status: 200, ruleId });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  updateRule: (req, res) => {
-    const ruleId = req.params.rule;
-
-    model.updateRule(ruleId, req.body, (err) =>
-      err
-        ? errorResponse("Rules", "Updating a rule", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200 })
-    );
+  updateRule: async (req, res) => {
+    const ruleId = parseInt(req.params.rule);
+    try {
+      await model.updateRule(ruleId, req.body);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchRules: (req, res) => {
-    model.getRulesByGroupHeader(parseInt(req.params.group), (err, data) =>
-      err
-        ? errorResponse("Rules", "Fetching all rules", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, rules: data })
-    );
+  fetchRules: async (req, res) => {
+    const groupId = parseInt(req.params.group);
+    try {
+      const data = await model.getRulesByGroupHeader(parseInt(groupId));
+      res.status(200).json({ status: 200, rules: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchRule: (req, res) => {
-    model.getRuleFull(parseInt(req.params.rule), (err, data) =>
-      err
-        ? errorResponse("Rules", "Fetching a rule", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, rule: data })
-    );
+  fetchRule: async (req, res) => {
+    const ruleId = parseInt(req.params.rule);
+    try {
+      const data = await model.getRuleFull(parseInt(ruleId));
+      res.status(200).json({ status: 200, rule: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  deleteRule: (req, res) => {
-    model.deleteRule(req.params.rule, (err, _) =>
-      err
-        ? errorResponse("Rules", "Fetching a rule", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200 })
-    );
+  deleteRule: async (req, res) => {
+    const ruleId = parseInt(req.params.rule);
+    try {
+      await model.deleteRule(ruleId);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  parseFormula: (req, res) => {
+  parseFormula: async (req, res) => {
     const formula = req.body.formula;
 
-    exec(
-      `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`,
-      (err, stdout, stderr) =>
-        err
-          ? errorResponse(formula, "Parsing", err) &&
-            res.status(500).json({ status: 500 })
-          : res.status(200).json({ status: 200, latex: stdout })
-    );
+    try {
+      const buffer = exec(
+        `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`
+      );
+      res.status(200).json({ status: 200, latex: buffer.toString() });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
   createRuleMultiple: async (req, res) => {
-    const rules = req.body.rules;
-    const groupId = req.body.group;
+    const rules = req.body;
+    const groupId = parseInt(req.params.group);
 
-    let error = false;
-    for await (const rule of rules) {
-      rule.groupId = groupId;
-      rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
-      rule.filters = rule.filters.map((f, i) => ({
-        ...f,
-        index: i,
-        spaces: f.spaces || [],
-        constraints: f.constraints.map((c, j) => ({
-          ...c,
-          index: j,
-          values: c.values || [],
-        })),
-      }));
+    try {
+      for await (const rule of rules) {
+        rule.group = groupId;
+        rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
+        rule.filters = rule.filters.map((f, i) => ({
+          ...f,
+          index: i,
+          name: "p" + i,
+          spaces: f.spaces || [],
+          constraints: f.constraints.map((c, j) => ({
+            ...c,
+            index: j,
+            values: c.values || [],
+          })),
+        }));
 
-      await model.createRule(rule, (err) => {
-        if (err) {
-          errorResponse("Rules", "Creating a rule", err);
-          error = true;
-        }
-      });
-      if (error) break;
+        await model.createRule(req.userId, rule);
+      }
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
     }
-
-    error
-      ? res.status(500).json({ status: 500 })
-      : res.status(200).json({ status: 200 });
   },
-  fetchGroups: (req, res) => {
-    model.getGroups((err, data) =>
-      err
-        ? errorResponse("Rules", "Fetching groups", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, groups: data })
-    );
+  fetchGroups: async (req, res) => {
+    try {
+      const data = await model.getGroups();
+      res.status(200).json({ status: 200, groups: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
-  fetchRegions: (req, res) => {
-    model.getRegions((err, data) =>
-      err
-        ? errorResponse("Regions", "Fetching regions", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, regions: data })
-    );
+  fetchRegions: async (req, res) => {
+    try {
+      const data = await model.getRegions();
+      res.status(200).json({ status: 200, regions: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchCommunes: (req, res) => {
-    model.getCommunes(req.params.region, (err, data) =>
-      err
-        ? errorResponse("Commune", "Fetching communes", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, communes: data })
-    );
+  fetchCommunes: async (req, res) => {
+    const regionId = parseInt(req.params.region);
+
+    try {
+      const data = await model.getCommunes(regionId);
+      res.status(200).json({ status: 200, communes: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
-  createTender: (req, res) => {
-    model.createTender(req.userId, req.body, (err, tenderId) =>
-      err
-        ? errorResponse("Tenders", "Creating a tender", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, tenderId })
-    );
+  createTender: async (req, res) => {
+    try {
+      const tenderId = await model.createTender(req.userId, req.body);
+      res.status(200).json({ status: 200, tenderId });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
 
-  fetchTenders: (req, res) => {
-    model.getTenders((err, data) =>
-      err
-        ? errorResponse("Tenders", "Fetching tenders", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, tenders: data })
-    );
+  fetchTenders: async (req, res) => {
+    try {
+      const data = await model.getTenders();
+      res.status(200).json({ status: 200, tenders: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchTender: (req, res) => {
-    model.getTender(req.params.tender, (err, data) =>
-      err
-        ? errorResponse("Tender", "Fetching tender", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, tender: data })
-    );
+  fetchTender: async (req, res) => {
+    const tenderId = parseInt(req.params.tender);
+    try {
+      const data = await model.getTender(tenderId);
+      res.status(200).json({ status: 200, tender: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchUserTenders: (req, res) => {
-    model.getTendersUser(req.userId, (err, data) =>
-      err
-        ? errorResponse("Tender", "Fetching tender", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, tenders: data })
-    );
+  fetchUserTenders: async (req, res) => {
+    try {
+      const data = await model.getTendersUser(req.userId);
+      res.status(200).json({ status: 200, tenders: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  fetchUserRules: (req, res) => {
-    model.getRulesUser(req.userId, (err, data) =>
-      err
-        ? errorResponse("Rules", "Fetching rule", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, rules: data })
-    );
+  fetchUserRules: async (req, res) => {
+    try {
+      const data = await model.getRulesUser(req.userId);
+      res.status(200).json({ status: 200, rules: data });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  deleteTender: (req, res) => {
-    model.removeTender(req.params.tender, (err) =>
-      err
-        ? errorResponse("Tender", "Deleting tender", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200 })
-    );
+  deleteTender: async (req, res) => {
+    const tenderId = parseInt(req.params.tender);
+    try {
+      await model.removeTender(tenderId);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
   },
-  createGroup: (req, res) =>
-    model.createGroup(req.body.name, (err, id) =>
-      err
-        ? errorResponse("Group", "Creating group", err) &&
-          res.status(500).json({ status: 500 })
-        : res.status(200).json({ status: 200, group: id })
-    ),
+  updateTender: async (req, res) => {
+    const tenderId = parseInt(req.params.tender);
+
+    try {
+      await model.updateTender(tenderId, req.body);
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
+  },
+  createGroup: async (req, res) => {
+    try {
+      const id = await model.createGroup(req.body.name);
+      res.status(200).json({ status: 200, group: id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
+  },
 };

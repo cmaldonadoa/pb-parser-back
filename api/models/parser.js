@@ -7,18 +7,15 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 module.exports = {
-  saveMetadata: async (data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
-    const t = await db.transaction();
+  saveMetadata: async (data) => {
+    await testConnection();
+
+    await db.transaction();
     try {
       await db.delete(
         "DELETE FROM [ifc_bim].[file_metadata] WHERE [file_id] = ?",
@@ -44,7 +41,7 @@ module.exports = {
             );
           } else {
             await db.insert(
-              "INSERT INTO [ifc_bim].[file_metadata_filter] ([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
+              "INSERT INTO [ifc_bim].[file_metadata_filter]([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
               [data.fileId, filterId, distance]
             );
           }
@@ -58,13 +55,13 @@ module.exports = {
                 : [values[k]];
 
               const metadataId = await db.insert(
-                "INSERT INTO [ifc_bim].[file_metadata] ([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
+                "INSERT INTO [ifc_bim].[file_metadata]([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
                 [data.fileId, constraintId, guid]
               );
 
               for await (const singleValue of valueList) {
                 await db.insert(
-                  "INSERT INTO [ifc_bim].[metadata_value] ([file_metadata_id], [value]) VALUES (?, ?)",
+                  "INSERT INTO [ifc_bim].[metadata_value]([file_metadata_id], [value]) VALUES (?, ?)",
                   [metadataId, singleValue]
                 );
               }
@@ -73,22 +70,17 @@ module.exports = {
         }
       }
 
-      await t.commit();
-      callback(null);
+      await db.commit();
     } catch (error) {
-      await t.rollback();
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  getRuleMetadata: async (data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
-
+  getRuleMetadata: async (data) => {
+    await testConnection();
     try {
       const filters = await db.get(
-        "SELECT [filter_id], [index] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
+        "SELECT [filter_id], [index], [name] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
         [data.ruleId]
       );
 
@@ -161,7 +153,7 @@ module.exports = {
           packets.push(packet);
         }
 
-        filterMap[`${filter.name}`] = packets;
+        filterMap[filter.name] = packets;
       }
 
       return {
@@ -169,7 +161,102 @@ module.exports = {
         ruleMap: filterMap,
       };
     } catch (error) {
-      callback(error);
+      throw error;
+    }
+  },
+  deleteResults: async (fileId) => {
+    await testConnection();
+    await db.transaction();
+    try {
+      await db.delete("DELETE FROM [ifc_bim].[result] WHERE [file_id] = ?", [
+        fileId,
+      ]);
+      await db.commit();
+    } catch (error) {
+      await db.rollback();
+      throw error;
+    }
+  },
+  saveResult: async (fileId, ruleId, tenderId, result) => {
+    await testConnection();
+    await db.transaction();
+    try {
+      const bit = result === false ? 0 : 1;
+
+      const id = await db.insert(
+        "INSERT INTO [ifc_bim].[result] ([file_id], [rule_id], [tender_id], [value]) VALUES (?, ?, ?, ?)",
+        [fileId, ruleId, tenderId, bit]
+      );
+
+      result =
+        !Array.isArray(result) && typeof result !== "boolean"
+          ? [result]
+          : result;
+
+      if (Array.isArray(result)) {
+        for await (const value of result) {
+          await db.insert(
+            "INSERT INTO [ifc_bim].[result_value] ([result_id], [value]) VALUES (?, ?)",
+            [id, value]
+          );
+        }
+      }
+      await db.commit();
+    } catch (error) {
+      await db.rollback();
+      throw error;
+    }
+  },
+  getResults: async (fileId) => {
+    await testConnection();
+    try {
+      const results = await db.get(
+        "SELECT [result_id], [rule_id], [tender_id], [value] FROM [ifc_bim].[result] WHERE [file_id] = ?",
+        [fileId]
+      );
+      const tenderId = results[0].tender_id;
+
+      let data = [];
+      for await (const result of results) {
+        const rule = await db
+          .get(
+            "SELECT [name], [description] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
+            [result.rule_id]
+          )
+          .then((res) => res[0]);
+
+        const groupId = await db
+          .get(
+            "SELECT [group_id] FROM [ifc_bim].[rule_group] WHERE [rule_id] = ?",
+            [result.rule_id]
+          )
+          .then((res) => res[0].group_id);
+
+        const groupName = await db
+          .get("SELECT [name] FROM [ifc_bim].[group] WHERE [group_id] = ?", [
+            groupId,
+          ])
+          .then((res) => res[0].name);
+
+        const values = await db
+          .get(
+            "SELECT [value] FROM [ifc_bim].[result_value] WHERE [result_id] = ?",
+            [result.result_id]
+          )
+          .then((res) => res.map((v) => v.value));
+
+        data.push({
+          name: rule.name,
+          description: rule.description || "",
+          group: groupName,
+          bit: parseInt(result.value.toString("hex")),
+          values: values || [],
+        });
+      }
+
+      return { results: data, tenderId };
+    } catch (error) {
+      throw error;
     }
   },
 };

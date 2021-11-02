@@ -6,6 +6,7 @@ import json
 formula = sys.argv[1]
 rule_meta = json.loads(sys.argv[2])
 filter_map = json.loads(sys.argv[3])
+vars = json.loads(sys.argv[4])
 
 
 class Packet:
@@ -44,7 +45,7 @@ for k in filter_map:
         new_packets.add(p)
     real_map[k] = new_packets
 
-solution = Calculator.solve(formula, real_map, rule_meta)
+solution = Calculator.solve(formula, real_map, rule_meta, vars)
 
 
 class ParserEnconde(json.JSONEncoder):

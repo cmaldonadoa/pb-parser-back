@@ -34,6 +34,21 @@ class Manager {
           );
         }
       },
+      linkRuleBuildingTypes: async (ruleId, buildingTypesList) => {
+        for await (const buildingType of buildingTypesList) {
+          const buildingTypeId = await this.sqlManager
+            .get(
+              "SELECT [building_type_id] FROM [ifc_bim].[building_type] WHERE [name] = ?",
+              [buildingType]
+            )
+            .then((res) => res[0].building_type_id);
+
+          await this.sqlManager.insert(
+            "INSERT INTO [ifc_bim].[rule_building_type] ([rule_id], [building_type_id]) VALUES (?, ?)",
+            [ruleId, buildingTypeId]
+          );
+        }
+      },
       newFilter: async (ruleId, index, name) => {
         const result = await this.sqlManager.insert(
           "INSERT INTO [ifc_bim].[filter] ([rule_id], [index], [name]) VALUES (?, ?, ?)",
@@ -45,7 +60,7 @@ class Manager {
         for await (const entity of entitiesList) {
           let entityId = null;
           const entities = await this.sqlManager.get(
-            "SELECT [entity_id] FROM [ifc_bim].[entity] WHERE `name` = ?",
+            "SELECT [entity_id] FROM [ifc_bim].[entity] WHERE [name] = ?",
             [entity]
           );
           if (entities.length > 0) {
@@ -166,6 +181,17 @@ class Manager {
           .then((res) => res.map((e) => e.name));
         return result;
       },
+      getBuildingTypes: async (ruleId) => {
+        const result = await this.sqlManager
+          .get(
+            "SELECT e.[name] FROM [ifc_bim].[building_type] e " +
+              "JOIN [ifc_bim].[rule_building_type] r ON e.[building_type_id] = r.[building_type_id] " +
+              "WHERE r.[rule_id] = ?",
+            [ruleId]
+          )
+          .then((res) => res.map((e) => e.name));
+        return result;
+      },
       getFilters: async (ruleId) => {
         const result = await this.sqlManager.get(
           "SELECT [filter_id], [index], [name] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
@@ -258,6 +284,12 @@ class Manager {
           [ruleId]
         );
       },
+      unlinkRuleBuildingTypes: async (ruleId) => {
+        await this.sqlManager.delete(
+          "DELETE FROM [ifc_bim].[rule_building_type] WHERE [rule_id] = ?",
+          [ruleId]
+        );
+      },
       unlinkRuleGroup: async (ruleId) => {
         await this.sqlManager.delete(
           "DELETE FROM [ifc_bim].[rule_group] WHERE [rule_id] = ?",
@@ -311,14 +343,13 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 const manager = new Manager(db);
 
-const getRule = async (ruleId, callback) => {
+const getRule = async (ruleId) => {
   const result = { id: ruleId };
   try {
     const rule = await manager.getter.getRule(ruleId);
@@ -328,6 +359,9 @@ const getRule = async (ruleId, callback) => {
 
     const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
+
+    const buildingTypes = await manager.getter.getBuildingTypes(ruleId);
+    result.buildingTypes = buildingTypes;
 
     const filters = await manager.getter.getFilters(ruleId);
     const filtersArray = [];
@@ -388,72 +422,56 @@ const getRule = async (ruleId, callback) => {
     }
 
     result.filters = filtersArray;
-    callback(null, result);
+    return result;
   } catch (error) {
-    callback(error);
+    throw error;
   }
 };
 
 module.exports = {
-  getRulesByGroupFull: async (groupId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesByGroupFull: async (groupId) => {
+    await testConnection();
 
     try {
       const rules = await manager.getter.getRulesByGroup(groupId);
       const allRules = [];
       for await (const rule of rules) {
-        await getRule(rule.rule_id, (err, result) => {
-          if (err) throw err;
-          allRules.push(result);
-        });
+        const result = await getRule(rule.rule_id);
+        allRules.push(result);
       }
-      callback(null, allRules);
+      return allRules;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRulesByGroupHeader: async (groupId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesByGroupHeader: async (groupId) => {
+    await testConnection();
     try {
       const rows = await manager.getter.getRulesByGroup(groupId);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRuleHeader: async (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRuleHeader: async (ruleId) => {
+    await testConnection();
 
     try {
       const rows = await manager.getter.getRule(ruleId);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRuleFull: (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
-    return getRule(ruleId, callback);
+  getRuleFull: async (ruleId) => {
+    await testConnection();
+    const rule = await getRule(ruleId);
+    return rule;
   },
-  createRule: async (userId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  createRule: async (userId, data) => {
+    await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       const ruleId = await manager.creator.newRule(
@@ -465,6 +483,7 @@ module.exports = {
 
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
       await manager.creator.linkRuleGroup(ruleId, data.group);
+      await manager.creator.linkRuleBuildingTypes(ruleId, data.buildingTypes);
 
       for await (const filter of data.filters) {
         const filterId = await manager.creator.newFilter(
@@ -498,20 +517,17 @@ module.exports = {
         }
       }
 
-      await t.commit();
-      callback(null, ruleId);
+      await db.commit();
+      return ruleId;
     } catch (error) {
-      await t.rollback();
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  updateRule: async (ruleId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  updateRule: async (ruleId, data) => {
+    await testConnection();
 
-    const t = await db.transaction();
+    await db.transaction();
 
     try {
       await manager.updater.updateRule(
@@ -526,6 +542,9 @@ module.exports = {
 
       await manager.deleter.unlinkRuleGroup(ruleId);
       await manager.creator.linkRuleGroup(ruleId, data.group);
+
+      await manager.deleter.unlinkRuleBuildingTypes(ruleId);
+      await manager.creator.linkRuleBuildingTypes(ruleId, data.buildingTypes);
 
       for await (const filter of data.filters) {
         let filterId = filter.id;
@@ -580,72 +599,60 @@ module.exports = {
         }
       }
 
-      await t.commit();
-      callback(null);
+      await db.commit();
     } catch (error) {
-      await t.rollback();
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  deleteRule: async (ruleId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  deleteRule: async (ruleId) => {
+    await testConnection();
+    await db.transaction();
+
     try {
       await manager.deleter.deleteRule(ruleId);
-      callback(null);
+      await db.commit();
     } catch (error) {
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  getGroups: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getGroups: async () => {
+    await testConnection();
     try {
       const rows = await manager.getter.getGroups();
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRegions: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRegions: async () => {
+    await testConnection();
 
     try {
       const rows = await db.get("SELECT * FROM [ifc_bim].[region]", []);
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getCommunes: async (regionId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getCommunes: async (regionId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT [commune_id], [name] FROM [ifc_bim].[commune] WHERE [region_id] = ?",
         [regionId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
+  createTender: async (userId, data) => {
+    await testConnection();
 
-  createTender: async (userId, data, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+    await db.transaction();
 
     try {
       const buildingType = await db.get(
@@ -654,10 +661,10 @@ module.exports = {
       );
 
       const tenderId = await db.insert(
-        "INSERT INTO [ifc_bim].[tender] (" +
-          "[name], [region_id], [commune_id], [address], [property_role], [constructability_coef]," +
-          "[soil_occupancy_coef], [building_type_id], [angle], [vulnerable], [handicap_vulnerable]," +
-          "[medios_1], [handicap_medios_1], [medios_2], [handicap_medios_2], [total], [created_by]) " +
+        "INSERT INTO [ifc_bim].[tender](" +
+          "[name],[region_id],[commune_id],[address],[property_role],[constructability_coef]," +
+          "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
+          "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
@@ -680,106 +687,138 @@ module.exports = {
         ]
       );
 
-      callback(null, tenderId);
+      await db.commit();
+      return tenderId;
     } catch (error) {
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  getTenders: async (callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTenders: async () => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
         []
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-
-  getTender: async (tenderId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTender: async (tenderId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
-        "SELECT t.*, r.[name] [building_type_name] FROM [ifc_bim].[tender] t " +
-          "JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
+        "SELECT t.*, r.[name] building_type_name FROM [ifc_bim].[tender] t JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
         [tenderId]
       );
-      callback(null, rows[0]);
+      return rows[0];
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getTendersUser: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getTendersUser: async (userId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT [tender_id], [name] FROM [ifc_bim].[tender] WHERE [created_by] = ?",
         [userId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRulesUser: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRulesUser: async (userId) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT [rule_id], [name] FROM [ifc_bim].[rule] WHERE [created_by] = ?",
         [userId]
       );
-      callback(null, rows);
+      return rows;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  removeTender: async (tenderId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  removeTender: async (tenderId) => {
+    await testConnection();
+    await db.transaction();
 
     try {
-      await db.get("DELETE FROM [ifc_bim].[tender] WHERE [tender_id] = ?", [
+      await db.delete("DELETE FROM [ifc_bim].[tender] WHERE [tender_id] = ?", [
         tenderId,
       ]);
-      callback(null);
+      await db.commit();
     } catch (error) {
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
-  createGroup: async (groupName, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
+  updateTender: async (tenderId, data) => {
+    await testConnection();
+
+    await db.transaction();
+
+    try {
+      const buildingType = await db.get(
+        "SELECT [building_type_id] FROM [ifc_bim].[building_type] WHERE [name] = ?",
+        [data.type]
+      );
+
+      await db.update(
+        "UPDATE [ifc_bim].[tender] SET " +
+          "[name] = ?,[region_id] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
+          "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
+          "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
+          "WHERE [tender_id] = ?",
+        [
+          data.name,
+          data.region,
+          data.commune,
+          data.address,
+          data.propertyRole,
+          data.constructabilityCoef,
+          data.soilOccupancyCoef,
+          buildingType[0].building_type_id,
+          data.angle,
+          data.vulnerable,
+          data.isHandicapVulnerable ? data.handicapVulnerable : 0,
+          data.medios1,
+          data.isHandicapMedios1 ? data.handicapMedios1 : 0,
+          data.medios2,
+          data.isHandicapMedios2 ? data.handicapMedios2 : 0,
+          data.total,
+          tenderId,
+        ]
+      );
+
+      await db.commit();
+    } catch (error) {
+      await db.rollback();
+      throw error;
     }
+  },
+  createGroup: async (groupName) => {
+    await testConnection();
+
+    await db.transaction();
 
     try {
       const groupId = await db.insert(
-        "INSERT INTO [ifc_bim].[group] ([name]) VALUES (?)",
+        "INSERT INTO [ifc_bim].[group]([name]) VALUES (?)",
         [groupName]
       );
-      callback(null, groupId);
+      await db.commit();
+      return groupId;
     } catch (error) {
-      callback(error);
+      await db.rollback();
+      throw error;
     }
   },
 };
