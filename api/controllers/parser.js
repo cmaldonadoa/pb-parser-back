@@ -44,6 +44,17 @@ module.exports = {
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
       const response = {};
 
+      const tender = await manager.getTender(tenderId);
+      const vars = {
+        VULNERABLE: tender.vulnerable,
+        MEDIOS_1: tender.medios_1,
+        MEDIOS_2: tender.medios_2,
+        SUELO: tender.soil_occupancy_coef,
+        CONSTRUCTIBILIDAD: tender.constructability_coef,
+        ROL: tender.property_role,
+        ANGULO: tender.angle,
+      };
+
       await parser.deleteResults(fileId);
 
       for await (const groupId of groupIds) {
@@ -71,7 +82,7 @@ module.exports = {
           const buffer = exec(
             `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${JSON.stringify(
               ruleMetadata
-            )}' '${JSON.stringify(ruleMap)}'`
+            )}' '${JSON.stringify(ruleMap)}' '${JSON.stringify(vars)}'`
           );
 
           const result = JSON.parse(buffer.toString());
