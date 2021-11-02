@@ -41,7 +41,7 @@ module.exports = {
 
     try {
       const result = await db.get(
-        "SELECT [file_id], f.[name] filename, r.[name] typename, [upload_date] FROM [ifc_bim].[file] f JOIN [model_type] r ON f.[model_type_id] = r.[model_type_id]",
+        "SELECT [file_id], f.[name] filename, r.[name] typename, [upload_date] FROM [ifc_bim].[file] f JOIN [ifc_bim].[model_type] r ON f.[model_type_id] = r.[model_type_id]",
         []
       );
       return result;

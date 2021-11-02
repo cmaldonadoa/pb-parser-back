@@ -109,7 +109,7 @@ module.exports = {
           const metadata = await db.get(
             "SELECT m.[ifc_guid], c.[attribute], m.[file_metadata_id] " +
               "FROM [ifc_bim].[file_metadata] m " +
-              "JOIN [constraint] c ON c.[constraint_id] = m.[constraint_id] " +
+              "JOIN [ifc_bim].[constraint] c ON c.[constraint_id] = m.[constraint_id] " +
               "WHERE m.[file_id] = ? AND m.[constraint_id] = ?",
             [data.fileId, constraintId]
           );

@@ -43,7 +43,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT [name] FROM [ifc_bim].[user_role] t JOIN [role] r ON t.[role_id] = r.[role_id] WHERE [user_id] = ?",
+        "SELECT [name] FROM [ifc_bim].[user_role] t JOIN [ifc_bim].[role] r ON t.[role_id] = r.[role_id] WHERE [user_id] = ?",
         [userId]
       );
       return rows[0].name;

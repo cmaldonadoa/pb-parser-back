@@ -174,7 +174,7 @@ class Manager {
         const result = await this.sqlManager
           .get(
             "SELECT e.[name] FROM [ifc_bim].[model_type] e " +
-              "JOIN [rule_model_type] r ON e.[model_type_id] = r.[model_type_id] " +
+              "JOIN [ifc_bim].[rule_model_type] r ON e.[model_type_id] = r.[model_type_id] " +
               "WHERE r.[rule_id] = ?",
             [ruleId]
           )
@@ -185,7 +185,7 @@ class Manager {
         const result = await this.sqlManager
           .get(
             "SELECT e.[name] FROM [ifc_bim].[building_type] e " +
-              "JOIN [rule_building_type] r ON e.[building_type_id] = r.[building_type_id] " +
+              "JOIN [ifc_bim].[rule_building_type] r ON e.[building_type_id] = r.[building_type_id] " +
               "WHERE r.[rule_id] = ?",
             [ruleId]
           )
@@ -203,7 +203,7 @@ class Manager {
         const result = await this.sqlManager
           .get(
             "SELECT e.[name] FROM [ifc_bim].[space] e " +
-              "JOIN [filter_space] r ON e.[space_id] = r.[space_id] " +
+              "JOIN [ifc_bim].[filter_space] r ON e.[space_id] = r.[space_id] " +
               "WHERE r.[filter_id] = ?",
             [filterId]
           )
@@ -214,7 +214,7 @@ class Manager {
         const result = await this.sqlManager
           .get(
             "SELECT e.[name] FROM [ifc_bim].[entity] e " +
-              "JOIN [filter_entity] r ON e.[entity_id] = r.[entity_id] " +
+              "JOIN [ifc_bim].[filter_entity] r ON e.[entity_id] = r.[entity_id] " +
               "WHERE r.[filter_id] = ?",
             [filterId]
           )
@@ -225,8 +225,8 @@ class Manager {
         const result = await this.sqlManager.get(
           "SELECT c.[constraint_id], c.[operation_id], c.[on_id], c.[attribute], c.[index], r.[name] op_name, s.[name] on_name " +
             "FROM [ifc_bim].[constraint] c " +
-            "JOIN [operation] r ON r.[operation_id] = c.[operation_id] " +
-            "JOIN [on] s ON s.[on_id] = c.[on_id] " +
+            "JOIN [ifc_bim].[operation] r ON r.[operation_id] = c.[operation_id] " +
+            "JOIN [ifc_bim].[on] s ON s.[on_id] = c.[on_id] " +
             "WHERE c.[filter_id] = ?",
           [filterId]
         );
@@ -244,7 +244,7 @@ class Manager {
       getRulesByGroup: async (groupId) => {
         const result = await this.sqlManager.get(
           "SELECT e.[rule_id], e.[name] FROM [ifc_bim].[rule] e " +
-            "JOIN [rule_group] r ON e.[rule_id] = r.[rule_id] " +
+            "JOIN [ifc_bim].[rule_group] r ON e.[rule_id] = r.[rule_id] " +
             "WHERE r.[group_id] = ?",
           [groupId]
         );
@@ -712,7 +712,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT t.*, r.[name] building_type_name FROM [ifc_bim].[tender] t JOIN [building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
+        "SELECT t.*, r.[name] building_type_name FROM [ifc_bim].[tender] t JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
         [tenderId]
       );
       return rows[0];
