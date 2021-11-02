@@ -17,9 +17,10 @@ module.exports = {
 
     await db.transaction();
     try {
-      await db.delete("DELETE FROM `file_metadata` WHERE `file_id` = ?", [
-        data.fileId,
-      ]);
+      await db.delete(
+        "DELETE FROM [ifc_bim].[file_metadata] WHERE [file_id] = ?",
+        [data.fileId]
+      );
       for await (const meta of data.metadata) {
         const [ruleId, tuples] = meta;
 
@@ -29,18 +30,18 @@ module.exports = {
           const packets = filterData.packets;
 
           const oldFilterMetadata = await db.get(
-            "SELECT * FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+            "SELECT * FROM [ifc_bim].[file_metadata_filter] WHERE [file_id] = ? AND [filter_id] = ?",
             [data.fileId, filterId]
           );
 
           if (oldFilterMetadata.length > 0) {
             await db.update(
-              "UPDATE `file_metadata_filter` SET `min_distance` = ? WHERE `file_id` = ? AND `filter_id` = ?",
+              "UPDATE [file_metadata_filter] SET [min_distance] = ? WHERE [file_id] = ? AND [filter_id] = ?",
               [distance, data.fileId, filterId]
             );
           } else {
             await db.insert(
-              "INSERT INTO `file_metadata_filter`(`file_id`, `filter_id`, `min_distance`) VALUES (?, ?, ?)",
+              "INSERT INTO [file_metadata_filter]([file_id], [filter_id], [min_distance]) VALUES (?, ?, ?)",
               [data.fileId, filterId, distance]
             );
           }
@@ -54,13 +55,13 @@ module.exports = {
                 : [values[k]];
 
               const metadataId = await db.insert(
-                "INSERT INTO `file_metadata`(`file_id`, `constraint_id`, `ifc_guid`) VALUES (?, ?, ?)",
+                "INSERT INTO [file_metadata]([file_id], [constraint_id], [ifc_guid]) VALUES (?, ?, ?)",
                 [data.fileId, constraintId, guid]
               );
 
               for await (const singleValue of valueList) {
                 await db.insert(
-                  "INSERT INTO `metadata_value`(`file_metadata_id`, `value`) VALUES (?, ?)",
+                  "INSERT INTO [metadata_value]([file_metadata_id], [value]) VALUES (?, ?)",
                   [metadataId, singleValue]
                 );
               }
@@ -79,7 +80,7 @@ module.exports = {
     await testConnection();
     try {
       const filters = await db.get(
-        "SELECT `filter_id`, `index`, `name` FROM `filter` WHERE `rule_id` = ?",
+        "SELECT [filter_id], [index], [name] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
         [data.ruleId]
       );
 
@@ -88,7 +89,7 @@ module.exports = {
 
       for await (const filter of filters) {
         const filterMetadata = await db.get(
-          "SELECT `min_distance` FROM `file_metadata_filter` WHERE `file_id` = ? AND `filter_id` = ?",
+          "SELECT [min_distance] FROM [ifc_bim].[file_metadata_filter] WHERE [file_id] = ? AND [filter_id] = ?",
           [data.fileId, filter.filter_id]
         );
 
@@ -97,7 +98,7 @@ module.exports = {
         };
 
         const constraints = await db.get(
-          "SELECT `constraint_id` FROM `constraint` WHERE `filter_id` = ?",
+          "SELECT [constraint_id] FROM [ifc_bim].[constraint] WHERE [filter_id] = ?",
           [filter.filter_id]
         );
 
@@ -106,16 +107,16 @@ module.exports = {
         let result = [];
         for await (const constraintId of constraintIds) {
           const metadata = await db.get(
-            "SELECT m.`ifc_guid`, c.`attribute`, m.`file_metadata_id` " +
-              "FROM `file_metadata` m " +
-              "JOIN `constraint` c ON c.`constraint_id` = m.`constraint_id` " +
-              "WHERE m.`file_id` = ? AND m.`constraint_id` = ?",
+            "SELECT m.[ifc_guid], c.[attribute], m.[file_metadata_id] " +
+              "FROM [ifc_bim].[file_metadata] m " +
+              "JOIN [constraint] c ON c.[constraint_id] = m.[constraint_id] " +
+              "WHERE m.[file_id] = ? AND m.[constraint_id] = ?",
             [data.fileId, constraintId]
           );
 
           for await (const metavalue of metadata) {
             const values = await db.get(
-              "SELECT `value` FROM `metadata_value` WHERE `file_metadata_id` = ?",
+              "SELECT [value] FROM [ifc_bim].[metadata_value] WHERE [file_metadata_id] = ?",
               [metavalue.file_metadata_id]
             );
 
@@ -167,7 +168,9 @@ module.exports = {
     await testConnection();
     await db.transaction();
     try {
-      await db.delete("DELETE FROM `result` WHERE `file_id` = ?", [fileId]);
+      await db.delete("DELETE FROM [ifc_bim].[result] WHERE [file_id] = ?", [
+        fileId,
+      ]);
       await db.commit();
     } catch (error) {
       await db.rollback();
@@ -181,7 +184,7 @@ module.exports = {
       const bit = result === false ? 0 : 1;
 
       const id = await db.insert(
-        "INSERT INTO `result` (`file_id`, `rule_id`, `tender_id`, `value`) VALUES (?, ?, ?, ?)",
+        "INSERT INTO [result] ([file_id], [rule_id], [tender_id], [value]) VALUES (?, ?, ?, ?)",
         [fileId, ruleId, tenderId, bit]
       );
 
@@ -193,7 +196,7 @@ module.exports = {
       if (Array.isArray(result)) {
         for await (const value of result) {
           await db.insert(
-            "INSERT INTO `result_value` (`result_id`, `value`) VALUES (?, ?)",
+            "INSERT INTO [result_value] ([result_id], [value]) VALUES (?, ?)",
             [id, value]
           );
         }
@@ -208,7 +211,7 @@ module.exports = {
     await testConnection();
     try {
       const results = await db.get(
-        "SELECT `result_id`, `rule_id`, `tender_id`, `value` FROM `result` WHERE `file_id` = ?",
+        "SELECT [result_id], [rule_id], [tender_id], [value] FROM [ifc_bim].[result] WHERE [file_id] = ?",
         [fileId]
       );
       const tenderId = results[0].tender_id;
@@ -216,25 +219,30 @@ module.exports = {
       let data = [];
       for await (const result of results) {
         const rule = await db
-          .get("SELECT `name`, `description` FROM `rule` WHERE `rule_id` = ?", [
-            result.rule_id,
-          ])
+          .get(
+            "SELECT [name], [description] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
+            [result.rule_id]
+          )
           .then((res) => res[0]);
 
         const groupId = await db
-          .get("SELECT `group_id` FROM `rule_group` WHERE `rule_id` = ?", [
-            result.rule_id,
-          ])
+          .get(
+            "SELECT [group_id] FROM [ifc_bim].[rule_group] WHERE [rule_id] = ?",
+            [result.rule_id]
+          )
           .then((res) => res[0].group_id);
 
         const groupName = await db
-          .get("SELECT `name` FROM `group` WHERE `group_id` = ?", [groupId])
+          .get("SELECT [name] FROM [ifc_bim].[group] WHERE [group_id] = ?", [
+            groupId,
+          ])
           .then((res) => res[0].name);
 
         const values = await db
-          .get("SELECT `value` FROM `result_value` WHERE `result_id` = ?", [
-            result.result_id,
-          ])
+          .get(
+            "SELECT [value] FROM [ifc_bim].[result_value] WHERE [result_id] = ?",
+            [result.result_id]
+          )
           .then((res) => res.map((v) => v.value));
 
         data.push({

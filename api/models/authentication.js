@@ -17,7 +17,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `password` FROM `user` WHERE `username` = ?",
+        "SELECT [password] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
       return rows[0].password;
@@ -30,7 +30,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `user_id` FROM `user` WHERE `username` = ?",
+        "SELECT [user_id] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
       return rows[0].user_id;
@@ -43,7 +43,7 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT `name` FROM `user_role` t JOIN `role` r ON t.`role_id` = r.`role_id` WHERE `user_id` = ?",
+        "SELECT [name] FROM [ifc_bim].[user_role] t JOIN [role] r ON t.[role_id] = r.[role_id] WHERE [user_id] = ?",
         [userId]
       );
       return rows[0].name;
@@ -58,11 +58,11 @@ module.exports = {
     await db.transaction();
     try {
       const userId = await db.insert(
-        "INSERT INTO `user` (`username`, `password`, `region_id`) VALUES (?, ?, ?)",
+        "INSERT INTO [user] ([username], [password], [region_id]) VALUES (?, ?, ?)",
         [username, hash, regionId]
       );
       await db.insert(
-        "INSERT INTO `user_role` (`user_id`, `role_id`) VALUES (?, ?)",
+        "INSERT INTO [user_role] ([user_id], [role_id]) VALUES (?, ?)",
         [userId, roleId]
       );
 
@@ -77,7 +77,9 @@ module.exports = {
     await testConnection();
     try {
       const result = await db
-        .get("SELECT `username` FROM `user` WHERE `user_id` = ?", [userId])
+        .get("SELECT [username] FROM [ifc_bim].[user] WHERE [user_id] = ?", [
+          userId,
+        ])
         .then((res) => res[0].username);
       return result;
     } catch (error) {

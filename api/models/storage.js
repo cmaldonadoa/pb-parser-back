@@ -18,13 +18,14 @@ module.exports = {
     await db.transaction();
     try {
       const typeId = await db
-        .get("SELECT `model_type_id` FROM `model_type` WHERE `name` = ?", [
-          data.type,
-        ])
+        .get(
+          "SELECT [model_type_id] FROM [ifc_bim].[model_type] WHERE [name] = ?",
+          [data.type]
+        )
         .then((res) => res[0].model_type_id);
 
       const result = await db.insert(
-        "INSERT INTO `file` (`name`, `model_type_id`, `created_by`) VALUES (?, ?, ?)",
+        "INSERT INTO [file] ([name], [model_type_id], [created_by]) VALUES (?, ?, ?)",
         [data.name, typeId, userId]
       );
 
@@ -40,7 +41,7 @@ module.exports = {
 
     try {
       const result = await db.get(
-        "SELECT `file_id`, f.`name` filename, r.`name` typename, `upload_date` FROM `file` f JOIN `model_type` r ON f.`model_type_id` = r.`model_type_id`",
+        "SELECT [file_id], f.[name] filename, r.[name] typename, [upload_date] FROM [ifc_bim].[file] f JOIN [model_type] r ON f.[model_type_id] = r.[model_type_id]",
         []
       );
       return result;
@@ -53,7 +54,7 @@ module.exports = {
 
     try {
       const result = await db
-        .get("SELECT * FROM `file` WHERE `file_id` = ?", [data.id])
+        .get("SELECT * FROM [ifc_bim].[file] WHERE [file_id] = ?", [data.id])
         .then((res) => res[0]);
       return result;
     } catch (error) {
@@ -65,11 +66,13 @@ module.exports = {
 
     try {
       const result = await db
-        .get("SELECT * FROM `file` WHERE `file_id` = ?", [data.fileId])
+        .get("SELECT * FROM [ifc_bim].[file] WHERE [file_id] = ?", [
+          data.fileId,
+        ])
         .then((res) => res[0]);
 
       const type = await db.get(
-        "SELECT `name` FROM `model_type` WHERE `model_type_id` = ?",
+        "SELECT [name] FROM [ifc_bim].[model_type] WHERE [model_type_id] = ?",
         [result.model_type_id]
       );
 
@@ -84,7 +87,7 @@ module.exports = {
 
     try {
       const result = await db.get(
-        "SELECT `file_id` FROM `file` WHERE `created_by` = ?",
+        "SELECT [file_id] FROM [ifc_bim].[file] WHERE [created_by] = ?",
         [userId]
       );
       return result;
@@ -98,7 +101,9 @@ module.exports = {
 
     await db.transaction();
     try {
-      await db.delete("DELETE FROM `file` WHERE `file_id` = ?", [fileId]);
+      await db.delete("DELETE FROM [ifc_bim].[file] WHERE [file_id] = ?", [
+        fileId,
+      ]);
       await db.commit();
     } catch (error) {
       await db.rollback();
