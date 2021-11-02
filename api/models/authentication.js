@@ -7,77 +7,83 @@ const testConnection = async () => {
     await db.ping();
     return true;
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
-    return false;
+    throw error;
   }
 };
 
 module.exports = {
-  getPassword: async (username, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getPassword: async (username) => {
+    await testConnection();
 
     try {
       const rows = await db.get(
         "SELECT [password] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
-      callback(false, rows[0].password);
+      return rows[0].password;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getUserId: async (username, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getUserId: async (username) => {
+    await testConnection();
+
     try {
       const rows = await db.get(
         "SELECT [user_id] FROM [ifc_bim].[user] WHERE [username] = ?",
         [username]
       );
-      callback(false, rows[0].user_id);
+      return rows[0].user_id;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
-  getRole: async (userId, callback) => {
-    if (!testConnection()) {
-      callback(true);
-      return;
-    }
+  getRole: async (userId) => {
+    await testConnection();
+
     try {
       const rows = await db.get(
         "SELECT [name] FROM [ifc_bim].[user_role] t JOIN [ifc_bim].[role] r ON t.[role_id] = r.[role_id] WHERE [user_id] = ?",
         [userId]
       );
-      callback(false, rows[0].name);
+      return rows[0].name;
     } catch (error) {
-      callback(error);
+      throw error;
     }
   },
 
-  storeUser: async ({ username, hash, regionId, roleId }, callback) => {
-    if (!testConnection()) {
-      callback();
-      return;
-    }
+  storeUser: async ({ username, hash, regionId, roleId }) => {
+    await testConnection();
+
+    await db.transaction();
     try {
       const userId = await db.insert(
         "INSERT INTO [ifc_bim].[user] ([username], [password], [region_id]) VALUES (?, ?, ?)",
         [username, hash, regionId]
       );
       await db.insert(
-        "INSERT INTO [user_role] ([user_id], [role_id]) VALUES (?, ?)",
+        "INSERT INTO [ifc_bim].[user_role] ([user_id], [role_id]) VALUES (?, ?)",
         [userId, roleId]
       );
 
-      callback();
+      await db.commit();
     } catch (error) {
-      callback();
+      await db.rollback();
+      throw error;
+    }
+  },
+
+  getUsername: async ({ userId }) => {
+    await testConnection();
+    try {
+      const result = await db
+        .get("SELECT [username] FROM [ifc_bim].[user] WHERE [user_id] = ?", [
+          userId,
+        ])
+        .then((res) => res[0].username);
+      return result;
+    } catch (error) {
+      throw error;
     }
   },
 };

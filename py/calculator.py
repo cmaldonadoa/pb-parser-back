@@ -49,6 +49,17 @@ class NamedSet(ISolver):
         return Set(data["map"][self.p])
 
 
+class Variable(ISolver):
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return f"${self.name}"
+
+    def solve(self, data):
+        return Set(data["vars"][self.name])
+
+
 class EmptySet(ISolver):
     def __repr__(self):
         return "\\varnothing"
@@ -688,6 +699,10 @@ class Calculator:
         if re.search('^#\w+$', string):
             return NamedSet(string[1:])
 
+        # CASE VARIABLE
+        if re.search('^$\w+$', string):
+            return Variable(string[1:])
+
         # CASE FUNCTION
         f = Calculator._parse_func(string)
         if f:
@@ -703,9 +718,9 @@ class Calculator:
         return Calculator._parse_external_op(string)
 
     @staticmethod
-    def solve(formula, data, metadata):
+    def solve(formula, data, metadata, variables):
         solver = Calculator.parse(formula)
-        return solver.solve({"map": data, "meta": metadata})
+        return solver.solve({"map": data, "meta": metadata, "vars": variables})
 
     @staticmethod
     def parse(formula):
