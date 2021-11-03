@@ -40,7 +40,16 @@ class SqlManager {
           ...(!!this._transaction && { transaction: this._transaction }),
         }
       )
-      .then((res) => res[0]);
+      .then(() =>
+        this._sequelize.query(
+          { query: "SELECT @@IDENTITY AS id" },
+          {
+            type: QueryTypes.SELECT,
+            ...(!!this._transaction && { transaction: this._transaction }),
+          }
+        )
+      )
+      .then((res) => res[0].id);
   }
 
   update(qry, vals) {
