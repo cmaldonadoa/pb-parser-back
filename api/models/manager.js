@@ -712,7 +712,10 @@ module.exports = {
 
     try {
       const rows = await db.get(
-        "SELECT t.*, r.[name] building_type_name FROM [ifc_bim].[tender] t JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] WHERE [tender_id] = ?",
+        "SELECT t.*, r.[name] building_type_name, s.[region_id] FROM [ifc_bim].[tender] t " +
+          "JOIN [ifc_bim].[building_type] r ON t.[building_type_id] = r.[building_type_id] " +
+          "JOIN [ifc_bim].[commune] s ON t.[commune_id] = s.[commune_id] " +
+          "WHERE [tender_id] = ?",
         [tenderId]
       );
       return rows[0];
