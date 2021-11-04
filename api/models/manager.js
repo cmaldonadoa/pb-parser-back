@@ -66,11 +66,7 @@ class Manager {
           if (entities.length > 0) {
             entityId = entities[0].entity_id;
           } else {
-            const result = await this.sqlManager.insert(
-              "INSERT INTO [ifc_bim].[entity] ([name]) VALUES (?)",
-              [entity]
-            );
-            entityId = result;
+            throw new Error("Unknown IFC entity ");
           }
 
           await this.sqlManager.insert(
