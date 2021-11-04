@@ -7,6 +7,8 @@ module.exports = function (app) {
   app.post("/rules", adminOnly, controller.createRule);
   app.post("/rules-multiple/:group", adminOnly, controller.createRuleMultiple);
 
+  app.get("/entities", controller.fetchEntities);
+
   app.get("/rules/:group/:rule", controller.fetchRule);
   app.get("/rules/:group", controller.fetchRules);
 

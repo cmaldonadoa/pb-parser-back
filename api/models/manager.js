@@ -820,4 +820,14 @@ module.exports = {
       throw error;
     }
   },
+  getEntities: async () => {
+    await testConnection();
+
+    try {
+      const rows = await db.get("SELECT [name] FROM [ifc_bim].[entity]", []);
+      return rows;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
