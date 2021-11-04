@@ -136,7 +136,7 @@ module.exports = {
 
   fetchTenders: async (req, res) => {
     try {
-      const data = await model.getTenders();
+      const data = await model.getTenders(req.userId);
       res.status(200).json({ status: 200, tenders: data });
     } catch (error) {
       console.error(error);

@@ -690,15 +690,30 @@ module.exports = {
       throw error;
     }
   },
-  getTenders: async () => {
+  getTenders: async (userId) => {
     await testConnection();
 
     try {
-      const rows = await db.get(
-        "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
-        []
+      const regionId = await db.get(
+        "SELECT [region_id] FROM [ifc_bim].[user] WHERE [user_id] = ?",
+        [userId]
       );
-      return rows;
+
+      if (regionId) {
+        const rows = await db.get(
+          "SELECT t.[tender_id], t.[name] FROM [ifc_bim].[tender] t " +
+            "JOIN [ifc_bim].[commune] r ON t.[commune_id] = r.[commune_id] " +
+            "WHERE r.[region_id] = ?",
+          [regionId]
+        );
+        return rows;
+      } else {
+        const rows = await db.get(
+          "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
+          []
+        );
+        return rows;
+      }
     } catch (error) {
       throw error;
     }
