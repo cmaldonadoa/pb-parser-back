@@ -658,13 +658,12 @@ module.exports = {
 
       const tenderId = await db.insert(
         "INSERT INTO [ifc_bim].[tender](" +
-          "[name],[region_id],[commune_id],[address],[property_role],[constructability_coef]," +
+          "[name],[commune_id],[address],[property_role],[constructability_coef]," +
           "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
           "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
-          data.region,
           data.commune,
           data.address,
           data.propertyRole,
@@ -694,17 +693,17 @@ module.exports = {
     await testConnection();
 
     try {
-      const regionId = await db.get(
+      const region = await db.get(
         "SELECT [region_id] FROM [ifc_bim].[user] WHERE [user_id] = ?",
         [userId]
       );
 
-      if (regionId) {
+      if (region.length > 0) {
         const rows = await db.get(
           "SELECT t.[tender_id], t.[name] FROM [ifc_bim].[tender] t " +
             "JOIN [ifc_bim].[commune] r ON t.[commune_id] = r.[commune_id] " +
             "WHERE r.[region_id] = ?",
-          [regionId]
+          [region[0].region_id]
         );
         return rows;
       } else {
@@ -787,13 +786,12 @@ module.exports = {
 
       await db.update(
         "UPDATE [ifc_bim].[tender] SET " +
-          "[name] = ?,[region_id] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
+          "[name] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
           "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
           "WHERE [tender_id] = ?",
         [
           data.name,
-          data.region,
           data.commune,
           data.address,
           data.propertyRole,
