@@ -48,7 +48,7 @@ module.exports = {
   },
   fetchFiles: async (req, res) => {
     try {
-      const data = await model.getFiles();
+      const data = await model.getFiles(req.userId);
       res.status(200).json({ status: 200, files: data });
     } catch (error) {
       console.error(error);
