@@ -1,3 +1,8 @@
+ALTER TABLE
+  [ifc_bim].[file_metadata]
+ALTER COLUMN
+  [ifc_guid] VARCHAR(255);
+
 INSERT INTO
   [ifc_bim].[entity]([name])
 VALUES

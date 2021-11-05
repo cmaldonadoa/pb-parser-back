@@ -41,8 +41,7 @@ module.exports = {
     const groupIds = req.body.group_ids.split(",");
 
     try {
-      const { file, type } = await storage.getFileWithType({ fileId: fileId });
-      const response = {};
+      const { type } = await storage.getFileWithType({ fileId: fileId });
 
       const tender = await manager.getTender(tenderId);
       const vars = {
@@ -58,7 +57,6 @@ module.exports = {
       await parser.deleteResults(fileId);
 
       for await (const groupId of groupIds) {
-        const results = {};
         let rules = [];
 
         const result = await manager.getRulesByGroupFull(parseInt(groupId));
@@ -72,7 +70,7 @@ module.exports = {
         }));
 
         for await (const rule of rules) {
-          const { id: ruleId, formula, name, description } = rule;
+          const { id: ruleId, formula } = rule;
 
           const { ruleMetadata, ruleMap } = await parser.getRuleMetadata({
             fileId,
@@ -86,20 +84,28 @@ module.exports = {
           );
 
           const result = JSON.parse(buffer.toString());
-          results[ruleId] = {
-            name: name,
-            description: description,
-            result: result,
-            filter: ruleMap,
-          };
 
           await parser.saveResult(fileId, ruleId, tenderId, result);
         }
-
-        response[groupId] = results;
       }
 
-      res.status(200).json({ status: 200, data: response });
+      res.status(200).json({ status: 200 });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
+  },
+
+  getResults: async (req, res) => {
+    const fileId = parseInt(req.params.file);
+    try {
+      const { results } = await parser.getResults(fileId);
+      const data = results.reduce((rv, x) => {
+        (rv[x["group"]] = rv[x["group"]] || []).push(x);
+        return rv;
+      }, {});
+
+      res.status(200).json({ status: 200, results: data });
     } catch (error) {
       console.error(error);
       res.status(500).json({ status: 500 });
