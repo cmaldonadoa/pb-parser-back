@@ -66,11 +66,7 @@ class Manager {
           if (entities.length > 0) {
             entityId = entities[0].entity_id;
           } else {
-            const result = await this.sqlManager.insert(
-              "INSERT INTO [ifc_bim].[entity] ([name]) VALUES (?)",
-              [entity]
-            );
-            entityId = result;
+            throw new Error("Unknown IFC entity ");
           }
 
           await this.sqlManager.insert(
@@ -662,13 +658,12 @@ module.exports = {
 
       const tenderId = await db.insert(
         "INSERT INTO [ifc_bim].[tender](" +
-          "[name],[region_id],[commune_id],[address],[property_role],[constructability_coef]," +
+          "[name],[commune_id],[address],[property_role],[constructability_coef]," +
           "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
           "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
-          data.region,
           data.commune,
           data.address,
           data.propertyRole,
@@ -694,15 +689,30 @@ module.exports = {
       throw error;
     }
   },
-  getTenders: async () => {
+  getTenders: async (userId) => {
     await testConnection();
 
     try {
-      const rows = await db.get(
-        "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
-        []
+      const region = await db.get(
+        "SELECT [region_id] FROM [ifc_bim].[user] WHERE [user_id] = ?",
+        [userId]
       );
-      return rows;
+
+      if (region.length > 0) {
+        const rows = await db.get(
+          "SELECT t.[tender_id], t.[name] FROM [ifc_bim].[tender] t " +
+            "JOIN [ifc_bim].[commune] r ON t.[commune_id] = r.[commune_id] " +
+            "WHERE r.[region_id] = ?",
+          [region[0].region_id]
+        );
+        return rows;
+      } else {
+        const rows = await db.get(
+          "SELECT [tender_id], [name] FROM [ifc_bim].[tender]",
+          []
+        );
+        return rows;
+      }
     } catch (error) {
       throw error;
     }
@@ -776,13 +786,12 @@ module.exports = {
 
       await db.update(
         "UPDATE [ifc_bim].[tender] SET " +
-          "[name] = ?,[region_id] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
+          "[name] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
           "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
           "WHERE [tender_id] = ?",
         [
           data.name,
-          data.region,
           data.commune,
           data.address,
           data.propertyRole,
@@ -821,6 +830,16 @@ module.exports = {
       return groupId;
     } catch (error) {
       await db.rollback();
+      throw error;
+    }
+  },
+  getEntities: async () => {
+    await testConnection();
+
+    try {
+      const rows = await db.get("SELECT [name] FROM [ifc_bim].[entity]", []);
+      return rows;
+    } catch (error) {
       throw error;
     }
   },

@@ -6,7 +6,7 @@ formula = sys.argv[1]
 
 solver = Calculator.parse(formula)
 
-if solver:  # If solver contains None?
+if solver.__repr__.find("None") < 0:
     print(solver)
 else:
     print("ERROR")

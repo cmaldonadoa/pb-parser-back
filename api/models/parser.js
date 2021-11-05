@@ -11,6 +11,106 @@ const testConnection = async () => {
   }
 };
 
+const getRuleMetadata = async (data) => {
+  await testConnection();
+  try {
+    const filters = await db.get(
+      "SELECT [filter_id], [index], [name] FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
+      [data.ruleId]
+    );
+
+    const filterMap = [];
+    for await (const filter of filters) {
+      const spaces = await db
+        .get(
+          "SELECT s.[name] FROM [ifc_bim].[space] s JOIN [ifc_bim].[filter_space] r ON s.[space_id] = r.[space_id] WHERE [filter_id] = ?",
+          [filter.filter_id]
+        )
+        .then((res) => res.map((v) => v.name));
+
+      const constraints = await db.get(
+        "SELECT [constraint_id] FROM [ifc_bim].[constraint] WHERE [filter_id] = ?",
+        [filter.filter_id]
+      );
+
+      const constraintIds = constraints.map((c) => c.constraint_id);
+
+      let result = [];
+      for await (const constraintId of constraintIds) {
+        const metadata = await db.get(
+          "SELECT m.[ifc_guid], c.[attribute], m.[file_metadata_id] " +
+            "FROM [ifc_bim].[file_metadata] m " +
+            "JOIN [ifc_bim].[constraint] c ON c.[constraint_id] = m.[constraint_id] " +
+            "WHERE m.[file_id] = ? AND m.[constraint_id] = ?",
+          [data.fileId, constraintId]
+        );
+
+        const psetName = await db
+          .get(
+            "SELECT [name_regexp] " +
+              "FROM [ifc_bim].[pset_constraint] " +
+              "WHERE [constraint_id] = ?",
+            [constraintId]
+          )
+          .then((res) => res.map((v) => v.name_regexp));
+
+        for await (const metavalue of metadata) {
+          const values = await db.get(
+            "SELECT [value] FROM [ifc_bim].[metadata_value] WHERE [file_metadata_id] = ?",
+            [metavalue.file_metadata_id]
+          );
+
+          const typedValues = values.map((v) =>
+            /^\d+$/.test(v.value)
+              ? parseInt(v.value)
+              : /^\d+\.\d+$/.test(v.value)
+              ? parseFloat(v.value)
+              : /^true$/i.test(v.value)
+              ? true
+              : /^false$/i.test(v.value)
+              ? false
+              : v.value
+          );
+
+          result.push({
+            ...metavalue,
+            property: psetName.length > 0 ? psetName[0] : undefined,
+            value: typedValues,
+          });
+        }
+      }
+
+      const valuesByGuid = ((arr, property) => {
+        return arr.reduce((acc, cur) => {
+          acc[cur[property]] = [...(acc[cur[property]] || []), cur];
+          return acc;
+        }, {});
+      })(result, "ifc_guid");
+
+      const packets = [];
+      for (const guid of Object.keys(valuesByGuid)) {
+        const guidValues = valuesByGuid[guid];
+        const packet = { entity: guid.split("_")[0], id: guid.split("_")[1] };
+        const packetValues = {};
+        for (const value of guidValues) {
+          const valueKey = !!value.property
+            ? `${value.property}.${value.attribute}`
+            : value.attribute;
+          packetValues[valueKey] = value.value;
+        }
+        packet.values = packetValues;
+        packets.push(packet);
+      }
+
+      filterMap.push({ spaces, meta: packets });
+    }
+
+    return filterMap;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   saveMetadata: async (data) => {
     await testConnection();
@@ -245,12 +345,18 @@ module.exports = {
           )
           .then((res) => res.map((v) => v.value));
 
+        const details = await getRuleMetadata({
+          fileId,
+          ruleId: result.rule_id,
+        });
+
         data.push({
           name: rule.name,
           description: rule.description || "",
           group: groupName,
-          bit: parseInt(result.value.toString("hex")),
-          values: values || [],
+          bit: result.value,
+          values: values,
+          details,
         });
       }
 

@@ -36,13 +36,15 @@ module.exports = {
       throw error;
     }
   },
-  getFiles: async () => {
+  getFiles: async (userId) => {
     await testConnection();
 
     try {
       const result = await db.get(
-        "SELECT [file_id], f.[name] filename, r.[name] typename, [upload_date] FROM [ifc_bim].[file] f JOIN [ifc_bim].[model_type] r ON f.[model_type_id] = r.[model_type_id]",
-        []
+        "SELECT [file_id], f.[name] filename, r.[name] typename, [upload_date] FROM [ifc_bim].[file] f " +
+          "JOIN [ifc_bim].[model_type] r ON f.[model_type_id] = r.[model_type_id] " +
+          "WHERE f.[created_by] = ?",
+        [userId]
       );
       return result;
     } catch (error) {

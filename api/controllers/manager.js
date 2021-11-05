@@ -136,7 +136,7 @@ module.exports = {
 
   fetchTenders: async (req, res) => {
     try {
-      const data = await model.getTenders();
+      const data = await model.getTenders(req.userId);
       res.status(200).json({ status: 200, tenders: data });
     } catch (error) {
       console.error(error);
@@ -196,6 +196,16 @@ module.exports = {
     try {
       const id = await model.createGroup(req.body.name);
       res.status(200).json({ status: 200, group: id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ status: 500 });
+    }
+  },
+
+  fetchEntities: async (req, res) => {
+    try {
+      const data = await model.getEntities();
+      res.status(200).json({ status: 200, entities: data });
     } catch (error) {
       console.error(error);
       res.status(500).json({ status: 500 });
