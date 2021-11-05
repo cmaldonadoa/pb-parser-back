@@ -37,7 +37,7 @@ class Collider:
     def add(self, *ifc_objects):
         for entity in ifc_objects:
             mesh = _create_mesh(entity)
-            if not mesh:
+            if not mesh or len(mesh.faces) == 0:
                 continue
             self.meshes.append(mesh)
             self.manager.add_object(entity.GlobalId, mesh)
