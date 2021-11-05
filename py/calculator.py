@@ -724,4 +724,4 @@ class Calculator:
 
     @staticmethod
     def parse(formula):
-        return Calculator._parse_formula(formula)
+        return Calculator._parse_formula(formula).__repr__
