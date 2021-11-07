@@ -632,7 +632,7 @@ class Calculator:
             [" * ", Multiply],
         ]
 
-        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_formula)
+        return Calculator._parse_op(string, ops, Calculator._parse_formula)
 
     @staticmethod
     def _parse_formula(string):
