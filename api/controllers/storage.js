@@ -4,7 +4,7 @@ const model = require("../models/storage.js");
 module.exports = {
   upload: async (req, res) => {
     const file = req.files ? req.files.file : null;
-    const type = req.body.type;
+    const { type, validate } = req.body;
 
     if (!file || !type) {
       res.status(400).json({
@@ -31,6 +31,19 @@ module.exports = {
     const extension = file.name.match(regexp)[0];
     const path = `${__dirname}/../../files`;
     const zipped = extension === "zip" || extension === "ifczip";
+
+    if (
+      validate &&
+      /^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/.test(
+        filename
+      )
+    ) {
+      res.status(400).json({
+        status: 400,
+        msg: "Wrong name",
+      });
+      return;
+    }
 
     try {
       const id = await model.saveFile(req.userId, { name: filename, type });
