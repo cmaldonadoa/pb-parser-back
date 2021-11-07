@@ -1,18 +1,16 @@
 from abc import ABC, abstractmethod
 import re
 
+
 # Custom list
-
-
 class mList(list):
     def __sub__(self, o):
         if len(self) != len(o):
             raise Exception("Lengths mismatch")
         return mList(a - b for a, b in zip(self, o))
 
+
 # Abstract classes
-
-
 class ISolver(ABC):
     @abstractmethod
     def solve(self, data):
