@@ -132,7 +132,7 @@ class InBool(ISolver):
 # Concrete operators
 class Union(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) | self.b.solve(data))
+        return Set(self.a.solve(data)) | Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\union {self.b})"
@@ -140,7 +140,7 @@ class Union(BinaryFunction):
 
 class Intersection(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) & self.b.solve(data))
+        return Set(self.a.solve(data)) & Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\intersect {self.b})"
@@ -148,7 +148,7 @@ class Intersection(BinaryFunction):
 
 class Difference(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) - self.b.solve(data))
+        return Set(self.a.solve(data)) - Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} - {self.b})"
@@ -190,7 +190,10 @@ class Greater(BinaryFunction):
 
 class Lesser(BinaryFunction):
     def solve(self, data):
-        return self.a.solve(data) < self.b.solve(data)
+        try:
+            return self.a.solve(data) < self.b.solve(data)
+        except TypeError:
+            return Set(self.a.solve(data)) < Set(self.b.solve(data))
 
     def __repr__(self):
         return f"{self.a} < {self.b}"
@@ -212,7 +215,10 @@ class GreaterEq(BinaryFunction):
 
 class LesserEq(BinaryFunction):
     def solve(self, data):
-        return self.a.solve(data) <= self.b.solve(data)
+        try:
+            return self.a.solve(data) <= self.b.solve(data)
+        except TypeError:
+            return Set(self.a.solve(data)) <= Set(self.b.solve(data))
 
     def __repr__(self):
         return f"{self.a} \\leq {self.b}"
@@ -324,7 +330,7 @@ class Then(BinaryFunction):
         return f"({self.a} \\ \\rightarrow \\  {self.b})"
 
 
-class In(BinaryFunction):
+class LogicalMatrixIn(BinaryFunction):
     def solve(self, data):
         b = self.b.solve(data)
         return mList(map(lambda x: x in b, self.a.solve(data)))
@@ -333,7 +339,7 @@ class In(BinaryFunction):
         return f"({self.a} \\ \\in \\  {self.b})"
 
 
-class Cross(BinaryFunction):
+class LogicalMatrixCross(BinaryFunction):
     def solve(self, data):
         b = self.b.solve(data)
         c = mList()
@@ -402,7 +408,7 @@ class Distance(UnaryFunction):
         return f"d({self.a})"
 
 
-class Filter(BinaryFunction):
+class Map(BinaryFunction):
     def solve(self, data):
         f = filter(lambda x: bool(x[1]), zip(self.a.solve(data), self.b.solve(data)))
         return mList(map(lambda x: x[0], f))
@@ -459,7 +465,7 @@ class Calculator:
         if r_pos < len(string) - 1:
             return
 
-        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "filter": Filter}
+        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "map": Map}
 
         return {
             "args": string[l_pos + 1:r_pos].split(", "),
@@ -624,9 +630,9 @@ class Calculator:
             [" or ", Or],
             [" and ", And],
             [" then ", Then],
-            [" in ", In],
+            [" in ", LogicalMatrixIn],
             [" as ", As],
-            [" x ", Cross],
+            [" x ", LogicalMatrixCross],
             [" * ", Multiply],
         ]
 
