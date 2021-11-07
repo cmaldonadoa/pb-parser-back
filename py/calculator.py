@@ -57,7 +57,7 @@ class Variable(ISolver):
         return f"${self.name}"
 
     def solve(self, data):
-        return Set(data["vars"][self.name])
+        return data["vars"][self.name]
 
 
 class EmptySet(ISolver):
@@ -700,7 +700,7 @@ class Calculator:
             return NamedSet(string[1:])
 
         # CASE VARIABLE
-        if re.search('^$\w+$', string):
+        if re.search('^\$\w+$', string):
             return Variable(string[1:])
 
         # CASE FUNCTION
