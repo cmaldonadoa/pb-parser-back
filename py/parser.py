@@ -218,7 +218,8 @@ class Parser:
         packets = []
         for x in self._all_elements:
             p = Packet(x["ifc"])
-            collider.add(x["ifc"])
+            if x["ifc"].is_a("IfcProduct"):
+                collider.add(x["ifc"])
             for k in x:
                 if k != "ifc":
                     p.add_value(k, x[k])
