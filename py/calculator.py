@@ -608,7 +608,7 @@ class Calculator:
             [" - ", InSub]
         ]
 
-        Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_op(set_name, x))
+        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_op(set_name, x))
 
     @staticmethod
     def _parse_external_op(string):
@@ -632,7 +632,7 @@ class Calculator:
             [" * ", Multiply],
         ]
 
-        Calculator._parse_op(string, ops, lambda x: Calculator._parse_formula)
+        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_formula)
 
     @staticmethod
     def _parse_formula(string):
