@@ -18,7 +18,9 @@ class Packet:
         return hash(self.guid)
 
     def __eq__(self, o: object) -> bool:
-        return self.guid == o.guid
+        if isinstance(object, Packet):
+            return self.guid == o.guid
+        return self.guid == o
 
     def __ne__(self, o: object) -> bool:
         return not self.__eq__(o)
@@ -30,7 +32,9 @@ class Packet:
         self.vals[name] = value
 
     def get_value(self, name: str):
-        return self.vals[name]
+        if name in self.vals.keys():
+            return self.vals[name]
+        return None
 
 
 real_map = {}

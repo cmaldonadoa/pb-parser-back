@@ -77,30 +77,34 @@ class Rule:
 
 class Packet:
     def __init__(self, element: IfcEntity) -> None:
-        self.id = element.id()
+        self.guid = element.id()
         self.type = element.is_a()
         self._vals = dict()
 
     def __hash__(self) -> int:
-        return hash(self.id)
+        return hash(self.guid)
 
     def __eq__(self, o: object) -> bool:
-        return self.id == o.id
+        if isinstance(object, Packet):
+            return self.guid == o.guid
+        return self.guid == o
 
     def __ne__(self, o: object) -> bool:
         return not self.__eq__(o)
 
     def __repr__(self) -> str:
-        return {"guid": self.id, "values": self._vals}.__repr__()
+        return {"guid": self.guid, "values": self._vals}.__repr__()
 
     def __str__(self) -> str:
-        return {"guid": self.id, "values": self._vals}
+        return {"guid": self.guid, "values": self._vals}
 
     def add_value(self, name: str, value: ValueType) -> None:
         self._vals[name] = value
 
     def get_value(self, name: str) -> ValueType:
-        return self._vals[name]
+        if name in self._vals.keys():
+            return self._vals[name]
+        return None
 
 
 class Parser:
