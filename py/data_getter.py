@@ -43,7 +43,7 @@ class ParserEnconde(json.JSONEncoder):
             return list(o)
 
         if isinstance(o, Packet):
-            return {"guid": f"{o.type}_{o.id}", "values": o._vals}
+            return {"guid": f"{o.type}_{o.guid}", "values": o._vals}
 
         return super().default(o)
 

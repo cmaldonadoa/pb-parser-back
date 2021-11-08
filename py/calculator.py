@@ -1,33 +1,39 @@
 from abc import ABC, abstractmethod
 import re
 
+
 # Custom list
-
-
 class mList(list):
     def __sub__(self, o):
         if len(self) != len(o):
             raise Exception("Lengths mismatch")
         return mList(a - b for a, b in zip(self, o))
 
+
 # Abstract classes
-
-
 class ISolver(ABC):
     @abstractmethod
     def solve(self, data):
         pass
 
 
-class Operator(ISolver):
+class UnaryFunction(ISolver):
+    def __init__(self, a):
+        self.a = a
+
+
+class BinaryFunction(ISolver):
     def __init__(self, a, b):
         self.a = a
         self.b = b
 
 
-class Function(ISolver):
-    def __init__(self, a):
-        self.a = a
+class Operation (BinaryFunction):
+    def solve_list_number(self, data, fn):
+        A = self.a.solve(data)
+        B = self.b.solve(data)
+        mB = mList(B for _ in range(len(A)))
+        return all(mList(fn(a, b) for a, b in zip(A, mB)))
 
 
 # Leaf nodes
@@ -57,7 +63,7 @@ class Variable(ISolver):
         return f"${self.name}"
 
     def solve(self, data):
-        return Set(data["vars"][self.name])
+        return data["vars"][self.name]
 
 
 class EmptySet(ISolver):
@@ -132,31 +138,31 @@ class InBool(ISolver):
 
 
 # Concrete operators
-class Union(Operator):
+class Union(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) | self.b.solve(data))
+        return Set(self.a.solve(data)) | Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\union {self.b})"
 
 
-class Intersection(Operator):
+class Intersection(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) & self.b.solve(data))
+        return Set(self.a.solve(data)) & Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\intersect {self.b})"
 
 
-class Difference(Operator):
+class Difference(BinaryFunction):
     def solve(self, data):
-        return Set(self.a.solve(data) - self.b.solve(data))
+        return Set(self.a.solve(data)) - Set(self.b.solve(data))
 
     def __repr__(self):
         return f"({self.a} - {self.b})"
 
 
-class Division(Operator):
+class Division(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
@@ -166,7 +172,7 @@ class Division(Operator):
         return f"({self.a} / {self.b})"
 
 
-class Equal(Operator):
+class Equal(BinaryFunction):
     def solve(self, data):
         return self.a.solve(data) == self.b.solve(data)
 
@@ -174,7 +180,7 @@ class Equal(Operator):
         return f"{self.a} = {self.b}"
 
 
-class NotEqual(Operator):
+class NotEqual(BinaryFunction):
     def solve(self, data):
         return self.a.solve(data) != self.b.solve(data)
 
@@ -182,29 +188,41 @@ class NotEqual(Operator):
         return f"{self.a} \\neq {self.b}"
 
 
-class Greater(Operator):
+class Greater(Operation):
     def solve(self, data):
-        return self.a.solve(data) > self.b.solve(data)
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return self.solve_list_number(data, lambda x, y: x > y)
+
+        return a > b
 
     def __repr__(self):
         return f"{self.a} > {self.b}"
 
 
-class Lesser(Operator):
+class Lesser(Operation):
     def solve(self, data):
-        return self.a.solve(data) < self.b.solve(data)
+        try:
+            a = self.a.solve(data)
+            b = self.b.solve(data)
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return self.solve_list_number(data, lambda x, y: x < y)
+
+            return a < b
+        except TypeError:
+            return Set(self.a.solve(data)) < Set(self.b.solve(data))
 
     def __repr__(self):
         return f"{self.a} < {self.b}"
 
 
-class GreaterEq(Operator):
+class GreaterEq(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
-        if type(a) != type(b) and (type(a) == mList or type(a) == Set):
-            mB = mList(b for _ in range(len(a)))
-            return all(mList(x >= y for x, y in zip(a, mB)))
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return self.solve_list_number(data, lambda x, y: x >= y)
 
         return a >= b
 
@@ -212,15 +230,23 @@ class GreaterEq(Operator):
         return f"{self.a} \\geq {self.b}"
 
 
-class LesserEq(Operator):
+class LesserEq(Operation):
     def solve(self, data):
-        return self.a.solve(data) <= self.b.solve(data)
+        try:
+            a = self.a.solve(data)
+            b = self.b.solve(data)
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return self.solve_list_number(data, lambda x, y: x <= y)
+
+            return a <= b
+        except TypeError:
+            return Set(self.a.solve(data)) <= Set(self.b.solve(data))
 
     def __repr__(self):
         return f"{self.a} \\leq {self.b}"
 
 
-class InAdd(Operator):
+class InAdd(BinaryFunction):
     def solve(self, data):
         return mList(a + b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
@@ -228,7 +254,7 @@ class InAdd(Operator):
         return f"({self.a} + {self.b})"
 
 
-class InSub(Operator):
+class InSub(BinaryFunction):
     def solve(self, data):
         return mList(a - b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
@@ -236,7 +262,7 @@ class InSub(Operator):
         return f"({self.a} - {self.b})"
 
 
-class InMultiply(Operator):
+class InMultiply(BinaryFunction):
     def solve(self, data):
         return mList(a * b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
@@ -244,7 +270,7 @@ class InMultiply(Operator):
         return f"({self.a} * {self.b})"
 
 
-class InDivision(Operator):
+class InDivision(BinaryFunction):
     def solve(self, data):
         return mList(False if b == 0 else a / b for a, b in zip(self.a.solve(data), self.b.solve(data)))
 
@@ -252,7 +278,7 @@ class InDivision(Operator):
         return f"({self.a} / {self.b})"
 
 
-class InEqual(Operator):
+class InEqual(BinaryFunction):
     def solve(self, data):
         return all(mList(a == b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -260,7 +286,7 @@ class InEqual(Operator):
         return f"{self.a} = {self.b}"
 
 
-class InNotEqual(Operator):
+class InNotEqual(BinaryFunction):
     def solve(self, data):
         return all(mList(a != b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -268,7 +294,7 @@ class InNotEqual(Operator):
         return f"{self.a} \\neq {self.b}"
 
 
-class InGreater(Operator):
+class InGreater(BinaryFunction):
     def solve(self, data):
         return all(mList(a > b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -276,7 +302,7 @@ class InGreater(Operator):
         return f"{self.a} > {self.b}"
 
 
-class InLesser(Operator):
+class InLesser(BinaryFunction):
     def solve(self, data):
         return all(mList(a < b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -284,7 +310,7 @@ class InLesser(Operator):
         return f"{self.a} < {self.b}"
 
 
-class InGreaterEq(Operator):
+class InGreaterEq(BinaryFunction):
     def solve(self, data):
         return all(mList(a >= b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -292,7 +318,7 @@ class InGreaterEq(Operator):
         return f"{self.a} \\geq {self.b}"
 
 
-class InLesserEq(Operator):
+class InLesserEq(BinaryFunction):
     def solve(self, data):
         return all(mList(a <= b for a, b in zip(self.a.solve(data), self.b.solve(data))))
 
@@ -300,7 +326,7 @@ class InLesserEq(Operator):
         return f"{self.a} \\leq {self.b}"
 
 
-class Or(Operator):
+class Or(BinaryFunction):
     def solve(self, data):
         return self.a.solve(data) or self.b.solve(data)
 
@@ -308,7 +334,7 @@ class Or(Operator):
         return f"{self.a} \\vee {self.b}"
 
 
-class And(Operator):
+class And(BinaryFunction):
     def solve(self, data):
         return self.a.solve(data) and self.b.solve(data)
 
@@ -316,7 +342,7 @@ class And(Operator):
         return f"{self.a} \\wedge {self.b}"
 
 
-class Then(Operator):
+class Then(BinaryFunction):
     def solve(self, data):
         if self.a.solve(data):
             return self.b.solve(data)
@@ -326,19 +352,7 @@ class Then(Operator):
         return f"({self.a} \\ \\rightarrow \\  {self.b})"
 
 
-class For(Operator):
-    def solve(self, data):
-        r = mList()
-        for a, b in zip(self.a.solve(data), self.b.solve(data)):
-            if b:
-                r.append(a)
-        return r
-
-    def __repr__(self):
-        return f"({self.a} \\ : \\  {self.b})"
-
-
-class In(Operator):
+class LogicalMatrixIn(BinaryFunction):
     def solve(self, data):
         b = self.b.solve(data)
         return mList(map(lambda x: x in b, self.a.solve(data)))
@@ -347,7 +361,7 @@ class In(Operator):
         return f"({self.a} \\ \\in \\  {self.b})"
 
 
-class Cross(Operator):
+class LogicalMatrixCross(BinaryFunction):
     def solve(self, data):
         b = self.b.solve(data)
         c = mList()
@@ -360,7 +374,7 @@ class Cross(Operator):
         return f"({self.a} \\ \\times \\  {self.b})"
 
 
-class As(Operator):
+class As(BinaryFunction):
     def solve(self, data):
         for a, b in zip(self.a.solve(data), self.b.solve(data)):
             t = []
@@ -375,7 +389,7 @@ class As(Operator):
         return f"{{{self.a} \\ \\sim \\  {self.b}}}"
 
 
-class Multiply(Operator):
+class Multiply(BinaryFunction):
     def solve(self, data):
         A = self.a.solve(data)
         B = self.b.solve(data)
@@ -389,7 +403,7 @@ class Multiply(Operator):
 
 
 # Concrete functions
-class Cardinality(Function):
+class Cardinality(UnaryFunction):
     def solve(self, data):
         return len(self.a.solve(data))
 
@@ -397,7 +411,7 @@ class Cardinality(Function):
         return f"|{self.a}|"
 
 
-class Sumatory(Function):
+class Sumatory(UnaryFunction):
     def solve(self, data):
         return sum(self.a.solve(data))
 
@@ -405,7 +419,7 @@ class Sumatory(Function):
         return f"\\Sigma{{({self.a})}}"
 
 
-class Distance(Function):
+class Distance(UnaryFunction):
     def solve(self, data):
         try:
             return self.a.solve(data).meta["distance"]
@@ -414,6 +428,15 @@ class Distance(Function):
 
     def __repr__(self):
         return f"d({self.a})"
+
+
+class Map(BinaryFunction):
+    def solve(self, data):
+        f = filter(lambda x: bool(x[1]), zip(self.a.solve(data), self.b.solve(data)))
+        return mList(map(lambda x: x[0], f))
+
+    def __repr__(self):
+        return f"({self.a} \\ : \\  {self.b})"
 
 
 # Main class
@@ -464,10 +487,10 @@ class Calculator:
         if r_pos < len(string) - 1:
             return
 
-        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance}
+        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "map": Map}
 
         return {
-            "arg": string[l_pos + 1:r_pos],
+            "args": string[l_pos + 1:r_pos].split(", "),
             "func": funcs[re.findall(r'\w+(?=\()', string[:l_pos + 1])[0]]
         }
 
@@ -522,6 +545,81 @@ class Calculator:
         return Calculator._parse_internal_op(set_name, string)
 
     @staticmethod
+    def _parse_op(string, ops, parser_fn):
+        def is_valid(arg):
+            cond1 = arg.count("(") != arg.count(")")
+            cond2 = arg.count("[") != arg.count("]")
+            cond3 = arg.find("(") > arg.find(")")
+            cond4 = arg.find("[") > arg.find("]")
+            return not (cond1 or cond2 or cond3 or cond4)
+
+        for op_str, op_class in ops:
+            args = string.split(op_str)
+            if len(args) == 2:
+                l = args[0]
+                r = args[1]
+
+                if not is_valid(l) or not is_valid(r):
+                    continue
+
+                l_solved = parser_fn(l)
+                r_solved = parser_fn(r)
+                return op_class(l_solved, r_solved)
+
+            elif len(args) > 2:
+                arg1 = None
+                arg2 = None
+                partial1 = None
+                partial2 = None
+                for arg in args:
+                    if arg.count("(") == arg.count(")"):
+                        if partial1 and not partial2:
+                            break
+
+                        if arg1:
+                            arg2 = parser_fn(arg)
+                            arg1 = op_class(arg1, arg2)
+                            arg2 = None
+                            partial1 = None
+                            partial2 = None
+                        else:
+                            arg1 = parser_fn(arg)
+
+                    else:
+                        if partial1:
+                            partial2 = arg
+
+                            if arg1:
+                                if not is_valid(partial1 + op_str + partial2):
+                                    partial1 = partial1 + op_str + partial2
+                                    partial2 = None
+
+                                else:
+                                    arg2 = parser_fn(
+                                        partial1 + op_str + partial2)
+                                    arg1 = op_class(arg1, arg2)
+                                    arg2 = None
+                            else:
+                                if not is_valid(partial1 + op_str + partial2):
+                                    partial1 = partial1 + op_str + partial2
+                                else:
+                                    if partial1 + op_str + partial2 == string:
+                                        break
+                                    arg1 = parser_fn(
+                                        partial1 + op_str + partial2)
+                                    partial1 = None
+
+                            partial2 = None
+
+                        else:
+                            partial1 = arg
+
+                if arg1:
+                    return arg1
+            else:
+                continue
+
+    @staticmethod
     def _parse_internal_op(set_name, string):
         ops = [
             [" = ", InEqual],
@@ -536,56 +634,7 @@ class Calculator:
             [" - ", InSub]
         ]
 
-        for op_str, op_class in ops:
-            args = string.split(op_str)
-            if len(args) == 2:
-                l = args[0]
-                r = args[1]
-                if l.count("(") != l.count(")") or r.count("(") != r.count(")"):
-                    continue
-
-                l_solved = Calculator._parse_internal_formula(set_name, l)
-                r_solved = Calculator._parse_internal_formula(set_name, r)
-                return op_class(l_solved, r_solved)
-
-            elif len(args) > 2:
-                arg1 = None
-                arg2 = None
-                partial1 = None
-                partial2 = None
-                for arg in args:
-                    if arg.count("(") == arg.count(")"):
-                        if partial1 and not partial2:
-                            break
-
-                        if arg1:
-                            arg2 = Calculator._parse_internal_formula(set_name, arg)
-                            arg1 = op_class(arg1, arg2)
-                            arg2 = None
-                            partial1 = None
-                            partial2 = None
-                        else:
-                            arg1 = arg
-                            arg1 = Calculator._parse_internal_formula(set_name, arg1)
-
-                    else:
-                        if partial1:
-                            partial2 = arg
-                            if arg1:
-                                arg2 = Calculator._parse_internal_formula(set_name, partial1 + op_str + partial2)
-                                arg1 = op_class(arg1, arg2)
-                                arg2 = None
-                                partial1 = None
-                                partial2 = None
-                            else:
-                                arg1 = Calculator._parse_internal_formula(set_name, partial1 + op_str + partial2)
-
-                        else:
-                            partial1 = arg
-                if arg1:
-                    return arg1
-            else:
-                continue
+        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_formula(set_name, x))
 
     @staticmethod
     def _parse_external_op(string):
@@ -603,85 +652,13 @@ class Calculator:
             [" or ", Or],
             [" and ", And],
             [" then ", Then],
-            [" for ", For],
-            [" in ", In],
+            [" in ", LogicalMatrixIn],
             [" as ", As],
-            [" x ", Cross],
+            [" x ", LogicalMatrixCross],
             [" * ", Multiply],
         ]
 
-        def is_valid(arg):
-            cond1 = arg.count("(") != arg.count(")")
-            cond2 = arg.count("[") != arg.count("]")
-            cond3 = arg.find("(") > arg.find(")")
-            cond4 = arg.find("[") > arg.find("]")
-            return not (cond1 or cond2 or cond3 or cond4)
-
-        for op_str, op_class in ops:
-            args = string.split(op_str)
-            if len(args) == 2:
-                l = args[0]
-                r = args[1]
-
-                if not is_valid(l) or not is_valid(r):
-                    continue
-
-                l_solved = Calculator._parse_formula(l)
-                r_solved = Calculator._parse_formula(r)
-                return op_class(l_solved, r_solved)
-
-            elif len(args) > 2:
-                arg1 = None
-                arg2 = None
-                partial1 = None
-                partial2 = None
-                for arg in args:
-                    if arg.count("(") == arg.count(")"):
-                        if partial1 and not partial2:
-                            break
-
-                        if arg1:
-                            arg2 = Calculator._parse_formula(arg)
-                            arg1 = op_class(arg1, arg2)
-                            arg2 = None
-                            partial1 = None
-                            partial2 = None
-                        else:
-                            arg1 = Calculator._parse_formula(arg)
-
-                    else:
-                        if partial1:
-                            partial2 = arg
-
-                            if arg1:
-                                if not is_valid(partial1 + op_str + partial2):
-                                    partial1 = partial1 + op_str + partial2
-                                    partial2 = None
-
-                                else:
-                                    arg2 = Calculator._parse_formula(
-                                        partial1 + op_str + partial2)
-                                    arg1 = op_class(arg1, arg2)
-                                    arg2 = None
-                            else:
-                                if not is_valid(partial1 + op_str + partial2):
-                                    partial1 = partial1 + op_str + partial2
-                                else:
-                                    if partial1 + op_str + partial2 == string:
-                                        break
-                                    arg1 = Calculator._parse_formula(
-                                        partial1 + op_str + partial2)
-                                    partial1 = None
-
-                            partial2 = None
-
-                        else:
-                            partial1 = arg
-
-                if arg1:
-                    return arg1
-            else:
-                continue
+        return Calculator._parse_op(string, ops, Calculator._parse_formula)
 
     @staticmethod
     def _parse_formula(string):
@@ -700,14 +677,16 @@ class Calculator:
             return NamedSet(string[1:])
 
         # CASE VARIABLE
-        if re.search('^$\w+$', string):
+        if re.search('^\$\w+$', string):
             return Variable(string[1:])
 
         # CASE FUNCTION
         f = Calculator._parse_func(string)
         if f:
-            a = Calculator._parse_formula(f["arg"])
-            return f["func"](a)
+            a = []
+            for arg in f["args"]:
+                a.append(Calculator._parse_formula(arg))
+            return f["func"](*a)
 
         # CASE INTERNAL FUNCTION
         f = Calculator._parse_internal_func(string)
