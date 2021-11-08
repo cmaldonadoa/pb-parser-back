@@ -28,6 +28,14 @@ class BinaryFunction(ISolver):
         self.b = b
 
 
+class Operation (BinaryFunction):
+    def solve_list_number(self, data, fn):
+        A = self.a.solve(data)
+        B = self.b.solve(data)
+        mB = mList(B for _ in range(len(A)))
+        return all(mList(fn(a, b) for a, b in zip(A, mB)))
+
+
 # Leaf nodes
 class Set(set, ISolver):
     def solve(self, _):
@@ -154,7 +162,7 @@ class Difference(BinaryFunction):
         return f"({self.a} - {self.b})"
 
 
-class Division(BinaryFunction):
+class Division(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
@@ -180,18 +188,28 @@ class NotEqual(BinaryFunction):
         return f"{self.a} \\neq {self.b}"
 
 
-class Greater(BinaryFunction):
+class Greater(Operation):
     def solve(self, data):
-        return self.a.solve(data) > self.b.solve(data)
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return self.solve_list_number(data, lambda x, y: x > y)
+
+        return a > b
 
     def __repr__(self):
         return f"{self.a} > {self.b}"
 
 
-class Lesser(BinaryFunction):
+class Lesser(Operation):
     def solve(self, data):
         try:
-            return self.a.solve(data) < self.b.solve(data)
+            a = self.a.solve(data)
+            b = self.b.solve(data)
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return self.solve_list_number(data, lambda x, y: x < y)
+
+            return a < b
         except TypeError:
             return Set(self.a.solve(data)) < Set(self.b.solve(data))
 
@@ -199,13 +217,12 @@ class Lesser(BinaryFunction):
         return f"{self.a} < {self.b}"
 
 
-class GreaterEq(BinaryFunction):
+class GreaterEq(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
-        if type(a) != type(b) and (type(a) == mList or type(a) == Set):
-            mB = mList(b for _ in range(len(a)))
-            return all(mList(x >= y for x, y in zip(a, mB)))
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return self.solve_list_number(data, lambda x, y: x >= y)
 
         return a >= b
 
@@ -213,10 +230,15 @@ class GreaterEq(BinaryFunction):
         return f"{self.a} \\geq {self.b}"
 
 
-class LesserEq(BinaryFunction):
+class LesserEq(Operation):
     def solve(self, data):
         try:
-            return self.a.solve(data) <= self.b.solve(data)
+            a = self.a.solve(data)
+            b = self.b.solve(data)
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return self.solve_list_number(data, lambda x, y: x <= y)
+
+            return a <= b
         except TypeError:
             return Set(self.a.solve(data)) <= Set(self.b.solve(data))
 
@@ -612,7 +634,7 @@ class Calculator:
             [" - ", InSub]
         ]
 
-        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_op(set_name, x))
+        return Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_formula(set_name, x))
 
     @staticmethod
     def _parse_external_op(string):
