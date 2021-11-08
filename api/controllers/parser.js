@@ -118,7 +118,7 @@ module.exports = {
 
   getResultsPdf: async (req, res) => {
     const fileId = parseInt(req.params.file);
-    const userId = parseInt(req.body.userId);
+    const userId = parseInt(req.userId);
     try {
       const { file, type } = await storage.getFileWithType({ fileId });
       const username = await authentication.getUsername({ userId });
@@ -130,16 +130,20 @@ module.exports = {
         return rv;
       }, {});
 
-      await pdf.writePdf(fileId, {
-        filename: file.name,
-        username,
-        type: type[0].name,
-        tender: tender.name,
-        data,
-      });
-      res
-        .status(200)
-        .download(`${__dirname}/../../files/${fileId}/results.pdf`);
+      await pdf.writePdf(
+        fileId,
+        {
+          filename: file.name,
+          username,
+          type: type[0].name,
+          tender: tender.name,
+          data,
+        },
+        () =>
+          res
+            .status(200)
+            .download(`${__dirname}/../../files/${fileId}/results.pdf`)
+      );
     } catch (error) {
       console.error(error);
       res.status(500).json({ status: 500 });
