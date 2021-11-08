@@ -61,7 +61,11 @@ module.exports = {
 
         const result = await manager.getRulesByGroupFull(parseInt(groupId));
 
-        rules = rules.filter((e) => e.modelTypes.indexOf(type[0].name) >= 0);
+        rules = rules.filter(
+          (e) =>
+            e.buildingType.indexOf(tenderId.building_type_name) >= 0 &&
+            e.modelTypes.indexOf(type[0].name) >= 0
+        );
         rules = result.map((r) => ({
           id: r.id,
           formula: r.formula,
