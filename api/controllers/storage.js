@@ -33,8 +33,8 @@ module.exports = {
     const zipped = extension === "zip" || extension === "ifczip";
 
     if (
-      validate &&
-      /^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/.test(
+      Boolean(validate) &&
+      !/^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/.test(
         filename
       )
     ) {
