@@ -66,9 +66,12 @@ const getResultsMd = ({ filename, type, username, tender, data }) => {
   doc.h2("Resumen");
   for (const groupName of Object.keys(data)) {
     const rules = data[groupName];
-    const good = rules.filter((r) => !!r.bit).length;
+    const good = rules.filter((r) => !!r.bit && r.values.length === 0).length;
     const bad = rules.filter((r) => !r.bit).length;
-    doc.p(`${groupName}: ${good} cumplidas - ${bad} falladas`);
+    const pending = rules.filter((r) => !!r.bit && r.values.length > 0).length;
+    doc.p(
+      `${groupName}: ${good} cumplidas - ${bad} falladas - ${pending} pendientes de revisión`
+    );
   }
 
   for (const groupName of Object.keys(data)) {
@@ -77,13 +80,50 @@ const getResultsMd = ({ filename, type, username, tender, data }) => {
     const rules = data[groupName];
     for (const rule of rules) {
       const img = !!rule.bit
-        ? Document.img(`${__dirname}/svg/ok.svg`)
+        ? rule.values.length > 0
+          ? Document.img(`${__dirname}/svg/minus.png`)
+          : Document.img(`${__dirname}/svg/ok.svg`)
         : Document.img(`${__dirname}/svg/x.svg`);
       doc.h3(img + " " + rule.name);
       !!rule.description && doc.p(rule.description);
       for (const value of rule.values) {
-        doc.p(value);
+        doc.p("Valor encontrado: " + value);
       }
+      doc.br();
+
+      doc.p("Detalles");
+      const s = "&nbsp;&nbsp;&nbsp;";
+      rule.details.map((e, i) => {
+        const prefix0 = i < rule.details.length - 1 ? "├" : "└";
+        doc.p(
+          `${s}${prefix0} Recinto: ${
+            e.spaces.length > 0
+              ? e.spaces[0][0] + e.spaces[0].slice(1).toLowerCase()
+              : "Todo el modelo"
+          }`
+        );
+
+        const prefix1 = i < rule.details.length - 1 ? "│" + s : s + s;
+        e.meta.length === 0 &&
+          doc.p(s + prefix1 + "└ No hay información para mostrar");
+
+        e.meta.map((m, j) => {
+          const prefix2_1 =
+            i < rule.details.length - 1 ? "│" + s : "&nbsp;&nbsp;" + s;
+          const prefix2_2 = j < e.meta.length - 1 ? "├" : "└";
+          doc.p(`${s}${prefix2_1} ${prefix2_2} ${m.entity} (ID: ${m.id})`);
+          Object.keys(m.values).map((v, k) => {
+            const prefix3_1 =
+              i < rule.details.length - 1 ? "│" + s : "&nbsp;&nbsp;" + s;
+            const prefix3_2 =
+              j < e.meta.length - 1 ? "│" + s : "&nbsp;&nbsp;" + s;
+            const prefix3_3 = k < Object.keys(m.values).length - 1 ? "├" : "└";
+            doc.p(
+              `${s}${prefix3_1} ${prefix3_2} ${prefix3_3}  ${v} = ${m.values[v]}`
+            );
+          });
+        });
+      });
       doc.br();
     }
   }
@@ -92,14 +132,18 @@ const getResultsMd = ({ filename, type, username, tender, data }) => {
 };
 
 module.exports = {
-  writePdf: async (fileId, { filename, type, username, tender, data }) => {
+  writePdf: async (
+    fileId,
+    { filename, type, username, tender, data },
+    callback
+  ) => {
     const md = getResultsMd({ filename, type, username, tender, data });
 
-    await markdownpdf({
+    markdownpdf({
       cssPath: `${__dirname}/pdf.css`,
       paperBorder: { top: "1cm", left: "2cm", right: "2cm", bottom: "1.5cm" },
     })
       .from.string(md)
-      .to(`${__dirname}/../../../files/${fileId}/results.pdf`);
+      .to(`${__dirname}/../../../files/${fileId}/results.pdf`, callback);
   },
 };

@@ -1,5 +1,3 @@
-from __future__ import annotations
-from typing import Any, List, Union
 from enum import Enum
 import re
 
@@ -13,8 +11,6 @@ from collider import Collider
 
 
 selector = Selector()
-SingleValueType = Union[str, int, float, None, List[type(IfcEntity)]]
-ValueType = List[SingleValueType]
 
 
 class On(Enum):
@@ -40,7 +36,7 @@ class Space(Enum):
 
 
 class Rule:
-    def __init__(self, id: int) -> None:
+    def __init__(self, id):
         self.id = id
         self.on = On.ENTITY
         self.mode = Mode.DEFAULT
@@ -49,66 +45,66 @@ class Rule:
         self.value = ""
         self.op = ""
 
-    def on_type(self) -> Rule:
+    def on_type(self):
         self.on = On.TYPE
         return self
 
-    def on_pset(self, pset: str) -> Rule:
+    def on_pset(self, pset):
         self.mode = Mode.PSET
         self.pset = pset
         return self
 
-    def on_location(self) -> Rule:
+    def on_location(self):
         self.mode = Mode.LOCATION
         return self
 
-    def set_op(self, op: str) -> Rule:
+    def set_op(self, op):
         self.op = op
         return self
 
-    def look(self, value: str) -> Rule:
+    def look(self, value):
         self.attribute = value
         return self
 
-    def expect(self, value: ValueType) -> Rule:
+    def expect(self, value):
         self.value = value
         return self
 
 
 class Packet:
-    def __init__(self, element: IfcEntity) -> None:
+    def __init__(self, element):
         self.guid = element.id()
         self.type = element.is_a()
         self._vals = dict()
 
-    def __hash__(self) -> int:
+    def __hash__(self):
         return hash(self.guid)
 
-    def __eq__(self, o: object) -> bool:
+    def __eq__(self, o):
         if isinstance(object, Packet):
             return self.guid == o.guid
         return self.guid == o
 
-    def __ne__(self, o: object) -> bool:
+    def __ne__(self, o):
         return not self.__eq__(o)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return {"guid": self.guid, "values": self._vals}.__repr__()
 
-    def __str__(self) -> str:
+    def __str__(self):
         return {"guid": self.guid, "values": self._vals}
 
-    def add_value(self, name: str, value: ValueType) -> None:
+    def add_value(self, name, value):
         self._vals[name] = value
 
-    def get_value(self, name: str) -> ValueType:
+    def get_value(self, name):
         if name in self._vals.keys():
             return self._vals[name]
         return None
 
 
 class Parser:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path):
         self._file = ifcopenshell.open(path)
         self._scope = Scope.GLOBAL
         self._space_mode = Space.ALL
@@ -118,24 +114,24 @@ class Parser:
         self._rules = []
 
     # Public methods
-    def include(self, *ifc_entities: str) -> Parser:
+    def include(self, *ifc_entities):
         for ifc_entity in ifc_entities:
             elements = self._file.by_type(ifc_entity)
             self._all_elements += [{"ifc": e} for e in elements]
         return self
 
-    def on_spaces(self, names: List[str], mode: Union[Space.ALL, Space.BOUNDS, Space.INSIDE] = Space.ALL) -> Parser:
+    def on_spaces(self, names, mode=Space.ALL):
         if bool(names):
             self._scope = Scope.SPACE
             self._spaces = names
             self._space_mode = mode
         return self
 
-    def add_rule(self, rule: Rule) -> Parser:
+    def add_rule(self, rule):
         self._rules.append(rule)
         return self
 
-    def search(self) -> tuple[List[Packet], float]:
+    def search(self):
         if len(self._rules) == 0:
             return self._error()
 
@@ -170,20 +166,28 @@ class Parser:
                                     return (e, entity)
                         return []
 
-                    def func1(element, ifc_element): return self._search_pset_entity(
-                        rule.id, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.ENTITY else self._search_pset_type(
-                        rule.id, ifc_element, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.TYPE else self._search_location(
+                    def func1(element, ifc_element):
+                        return self._search_pset_entity(
+                            rule.id, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.ENTITY else self._search_pset_type(
+                            rule.id, ifc_element, element, rule.pset, rule.attribute, rule.value, rule.op) if rule.mode == Mode.PSET and rule.on == On.TYPE else self._search_location(
                             rule.id, element, rule.attribute, rule.value, rule.op) if rule.mode == Mode.LOCATION else self._search_default(
                             rule.id, ifc_element, element, rule.attribute, rule.value, rule.op)
 
                     if self._space_mode == Space.ALL or self._space_mode == Space.BOUNDS:
-                        def func2(x): return func1(*find_ifc_element(
-                            element=x)) if x in ifc_elements else None
-                        def func3(x): return func2(
-                            getattr(x, "RelatedBuildingElement", None))
+                        def func2(x):
+                            return func1(*find_ifc_element(
+                                element=x)) if x in ifc_elements else None
 
-                        def func4(x): return search_iter(x, func3)
-                        def func5(x): return func4(getattr(x, "BoundedBy", []))
+                        def func3(x):
+                            return func2(
+                                getattr(x, "RelatedBuildingElement", None))
+
+                        def func4(x):
+                            return search_iter(x, func3)
+
+                        def func5(x):
+                            return func4(getattr(x, "BoundedBy", []))
+
                         func5(space)
 
                     if self._space_mode == Space.ALL or self._space_mode == Space.INSIDE:
@@ -232,13 +236,13 @@ class Parser:
         return set(packets), collider.get_min_distance()
 
     # Private methods
-    def _keep(self, element: dict, attribute: str, value: ValueType) -> None:
+    def _keep(self, element, attribute, value):
         if type(value) == list or type(value) == tuple:
             value = list(map(lambda x: x.id(), value))
         element[attribute] = value
         self._partial_elements.append(element)
 
-    def _solve(self, op: str, arg1: SingleValueType, arg2: ValueType) -> bool:
+    def _solve(self, op, arg1, arg2):
         ops = {
             "EQUAL": lambda a, b: any([re.search(str(e), str(a)) if type(e) == str else e == a for e in b]),
             "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) if type(e) == str else e != a for e in b]),
@@ -256,7 +260,7 @@ class Parser:
         return ops[op](*(arg1,) if op in unary else (arg1, arg2))
 
     def _search_default(
-            self, id: int, ifc_element: IfcEntity, element: dict, attribute: str, value: ValueType, op: str) -> None:
+            self, id, ifc_element, element, attribute, value, op):
         this_value = getattr(ifc_element, attribute, None)
         this_value = str(this_value) if type(
             this_value) is bool else this_value
@@ -264,8 +268,8 @@ class Parser:
             self._keep(element, str(id), this_value)
 
     def _search_location(
-            self, id: int, element: dict, attribute: str, value: ValueType,
-            op: str) -> None:
+            self, id, element, attribute, value,
+            op):
         def sum_tuples(t1, t2): return tuple(map(lambda x, y: x + y, t1, t2))
 
         placement = element["ifc"].ObjectPlacement
@@ -280,7 +284,7 @@ class Parser:
             self._keep(element, str(id), this_value)
 
     def _search_pset_entity(
-            self, id: int, element: dict, pset: str, attribute: str, value: ValueType, op: str) -> None:
+            self, id, element, pset, attribute, value, op):
         psets = IOSElement.get_psets(element["ifc"])
         for pset_name in psets:
             if re.search(pset, pset_name):
@@ -293,8 +297,8 @@ class Parser:
                         self._keep(element, str(id), this_value)
                 break
 
-    def _search_pset_type(self, id: int, ifc_element: IfcEntity, element: dict, pset: str, attribute: str,
-                          value: ValueType, op: str) -> None:
+    def _search_pset_type(self, id, ifc_element, element, pset, attribute,
+                          value, op):
         psets = ifc_element.HasPropertySets
         for pset_type in psets:
             pset_name = pset_type.is_a()
