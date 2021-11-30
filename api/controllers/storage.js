@@ -1,5 +1,6 @@
 var exec = require("child_process").execSync;
 const model = require("../models/storage.js");
+const logger = require("../utils/logger");
 
 module.exports = {
   upload: async (req, res) => {
@@ -55,7 +56,7 @@ module.exports = {
       }
       res.status(200).json({ status: 200, id: id });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -64,7 +65,7 @@ module.exports = {
       const data = await model.getFiles(req.userId);
       res.status(200).json({ status: 200, files: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -74,7 +75,7 @@ module.exports = {
       const data = await model.getFilesUser(req.userId);
       res.status(200).json({ status: 200, files: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -86,7 +87,7 @@ module.exports = {
       exec(`rm -rf ${path}/${req.params.file}`);
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },

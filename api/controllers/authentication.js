@@ -1,6 +1,7 @@
 const model = require("../models/authentication.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const logger = require("../utils/logger");
 
 module.exports = {
   authenticate: async (req, res) => {
@@ -22,7 +23,7 @@ module.exports = {
         res.status(400).end();
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(400).end();
       return;
     }
@@ -36,7 +37,7 @@ module.exports = {
       await model.storeUser({ username, hash, regionId, roleId });
       res.status(200).end();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(400).end();
       return;
     }
@@ -58,7 +59,7 @@ module.exports = {
       req.userId = id;
       next();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(400).end();
       return;
     }
@@ -79,7 +80,7 @@ module.exports = {
       req.userId = id;
       next();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(400).end();
       return;
     }

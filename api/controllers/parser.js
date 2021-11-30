@@ -4,6 +4,7 @@ const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
 const authentication = require("../models/authentication.js");
 const pdf = require("../utils/pdf/pdf.js");
+const logger = require("../utils/logger");
 
 module.exports = {
   parse: async (req, res) => {
@@ -30,7 +31,7 @@ module.exports = {
       }
       res.status(200).json({ stauts: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -95,7 +96,7 @@ module.exports = {
 
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -111,7 +112,7 @@ module.exports = {
 
       res.status(200).json({ status: 200, results: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -145,7 +146,7 @@ module.exports = {
             .download(`${__dirname}/../../files/${fileId}/results.pdf`)
       );
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
