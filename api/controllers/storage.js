@@ -5,12 +5,12 @@ const logger = require("../utils/logger");
 module.exports = {
   upload: async (req, res) => {
     const file = req.files ? req.files.file : null;
-    const { type, validate } = req.body;
+    const { type } = req.body;
 
-    if (!file || !type || !validate) {
+    if (!file || !type) {
       res.status(400).json({
         status: 400,
-        msg: "Missing field: file, type or validate",
+        msg: "Missing field: file or type",
       });
       return;
     }
@@ -33,21 +33,15 @@ module.exports = {
     const path = `${__dirname}/../../files`;
     const zipped = extension === "zip" || extension === "ifczip";
 
-    if (
-      JSON.parse(validate) &&
-      !/^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/.test(
-        filename
-      )
-    ) {
-      res.status(400).json({
-        status: 400,
-        msg: "Wrong name",
-      });
-      return;
-    }
+    const nameRegexp =
+      /^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/;
 
     try {
-      const id = await model.saveFile(req.userId, { name: filename, type });
+      const id = await model.saveFile(req.userId, {
+        name: filename,
+        type,
+        valid: nameRegexp.test(filename),
+      });
       await file.mv(`${path}/${id}/${file.name}`);
       if (zipped) {
         exec(

@@ -161,14 +161,17 @@ module.exports = {
 
       const intersections = await parser.getIntersections(fileId);
 
-      res
-        .status(200)
-        .json({
-          status: 200,
-          results: data,
-          intersections: intersections.intersections,
-          duplicates: intersections.duplicates,
-        });
+      const isNameValid = await storage
+        .getFile({ id: fileId })
+        .then((res) => res.is_valid);
+
+      res.status(200).json({
+        status: 200,
+        results: data,
+        intersections: intersections.intersections,
+        duplicates: intersections.duplicates,
+        isNameValid,
+      });
     } catch (error) {
       logger.error(error);
       res.status(500).json({ status: 500 });

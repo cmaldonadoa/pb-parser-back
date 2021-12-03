@@ -24,6 +24,9 @@ CREATE TABLE [ifc_bim].[intersection]
   PRIMARY KEY ([intersection_id])
 );
 
+ALTER TABLE [ifc_bim].[file]
+ADD [is_valid] BIT NOT NULL DEFAULT 0;
+
 GO
 
 CREATE TRIGGER [ifc_bim].[trg_delete_CASCADE_ifc_intersection]
