@@ -1,4 +1,3 @@
-import enum
 import ifcopenshell
 import ifcopenshell.geom as geom
 import trimesh
@@ -69,3 +68,6 @@ class Collider:
 
     def get_distance(self, i, j):
         return math.dist(self.meshes[i], self.meshes[j])
+
+    def get_intersections(self):
+        return self.manager.in_collision_internal(return_names=True)

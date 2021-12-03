@@ -13,10 +13,11 @@ module.exports = {
     const path = `${__dirname}/../../files/${fileId}`;
 
     try {
+      // Parse rules
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
       for await (const groupId of groupIds) {
         const rules = await manager.getRulesByGroupFull(parseInt(groupId));
-        const buffer = exec(
+        const buffer1 = exec(
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
@@ -26,8 +27,56 @@ module.exports = {
 
         await parser.saveMetadata({
           fileId,
-          metadata: JSON.parse(buffer.toString()),
+          metadata: JSON.parse(buffer1.toString()),
         });
+
+        // Check intersections
+        const buffer2 = exec(
+          `python3 ${__dirname}/../../py/collision_checker.py '${path}/${file.name}.ifc'`
+        );
+
+        const { intersections, duplicates } = JSON.parse(buffer2.toString());
+        for await (const intersection of intersections) {
+          const [data1, data2] = intersection;
+          const [type1, location1, guid1] = data1;
+          const [type2, location2, guid2] = data2;
+
+          const ifcId1 = await parser.saveIfcElement({
+            fileId,
+            type: type1,
+            location: location1,
+            guid: guid1,
+          });
+
+          const ifcId2 = await parser.saveIfcElement({
+            fileId,
+            type: type2,
+            location: location2,
+            guid: guid2,
+          });
+
+          await parser.saveIntersection(ifcId1, ifcId2);
+        }
+
+        for await (const duplicate of duplicates) {
+          const [type, location, guid1, guid2] = duplicate;
+
+          const ifcId1 = await parser.saveIfcElement({
+            fileId,
+            type,
+            location,
+            guid: guid1,
+          });
+
+          const ifcId2 = await parser.saveIfcElement({
+            fileId,
+            type,
+            location,
+            guid: guid2,
+          });
+
+          await parser.saveDuplicate(ifcId1, ifcId2);
+        }
       }
       res.status(200).json({ stauts: 200 });
     } catch (error) {
@@ -110,7 +159,16 @@ module.exports = {
         return rv;
       }, {});
 
-      res.status(200).json({ status: 200, results: data });
+      const intersections = await parser.getIntersections(fileId);
+
+      res
+        .status(200)
+        .json({
+          status: 200,
+          results: data,
+          intersections: intersections.intersections,
+          duplicates: intersections.duplicates,
+        });
     } catch (error) {
       logger.error(error);
       res.status(500).json({ status: 500 });

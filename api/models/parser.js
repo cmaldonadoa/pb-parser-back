@@ -365,4 +365,89 @@ module.exports = {
       throw error;
     }
   },
+  saveIfcElement: async ({ fileId, type, location, guid }) => {
+    await testConnection();
+    try {
+      const result = await db.get(
+        "SELECT [file_element_id] FROM [ifc_bim].[file_element] WHERE [file_id] = ? AND [guid] = ?",
+        [fileId, guid]
+      );
+      if (result.length > 0) return result[0].file_element_id;
+
+      const [x, y, z] = location;
+      const id = await db.insert(
+        "INSERT INTO [ifc_bim].[file_element]([file_id], [type], [guid], [x], [y], [z]) VALUES (?, ?, ?, ?, ?, ?)",
+        [fileId, type, guid, x, y, z]
+      );
+      return id;
+    } catch (error) {
+      throw error;
+    }
+  },
+  saveIntersection: async (element1, element2) => {
+    await testConnection();
+    try {
+      await db.insert(
+        "INSERT INTO [ifc_bim].[intersection]([file_element_id_1], [file_element_id_2]) VALUES (?, ?)",
+        [element1, element2]
+      );
+    } catch (error) {
+      throw error;
+    }
+  },
+  saveDuplicate: async (element1, element2) => {
+    await testConnection();
+    try {
+      await db.insert(
+        "INSERT INTO [ifc_bim].[intersection]([file_element_id_1], [file_element_id_2], [is_duplicate]) VALUES (?, ?, ?)",
+        [element1, element2, 1]
+      );
+    } catch (error) {
+      throw error;
+    }
+  },
+  getIntersections: async (fileId) => {
+    await testConnection();
+
+    try {
+      const result = await db
+        .get(
+          "SELECT t.[intersection_id], t.[is_duplicate], " +
+            "r.[type] type1, r.[guid] guid1, r.[x] x1, r.[y] y1, r.[z] z1, " +
+            "s.[type] type2, s.[guid] guid2, s.[x] x2, s.[y] y2, s.[z] z2 " +
+            "FROM [IFC_BIM].[ifc_bim].[intersection] t " +
+            "JOIN [IFC_BIM].[ifc_bim].[file_element] r ON t.[file_element_id_1] = r.[file_element_id] " +
+            "JOIN [IFC_BIM].[ifc_bim].[file_element] s ON t.[file_element_id_2] = s.[file_element_id] " +
+            "WHERE r.[file_id] = ?",
+          [fileId]
+        )
+        .then((data) => ({
+          intersections: data
+            .filter((row) => !row.is_duplicate)
+            .map((row) => [
+              {
+                guid: row.guid1,
+                type: row.type1,
+                location: [row.x1, row.y1, row.z1],
+              },
+              {
+                guid: row.guid2,
+                type: row.type2,
+                location: [row.x2, row.y2, row.z2],
+              },
+            ]),
+          duplicates: data
+            .filter((row) => !!row.is_duplicate)
+            .map((row) => ({
+              guid1: row.guid1,
+              guid2: row.guid1,
+              type: row.type1,
+              location: [row.x1, row.y1, row.z1],
+            })),
+        }));
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
