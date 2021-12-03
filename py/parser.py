@@ -3,6 +3,7 @@ import re
 
 import ifcopenshell
 import ifcopenshell.util
+import ifcopenshell.geom
 import ifcopenshell.entity_instance as IfcEntity
 from ifcopenshell.util.selector import Selector
 import ifcopenshell.util.element as IOSElement
@@ -26,13 +27,16 @@ class Mode(Enum):
 
 class Scope(Enum):
     GLOBAL = 0
-    SPACE = 1
+    CONTAINER = 1
 
 
 class Space(Enum):
     ALL = 0
     BOUNDS = 1
     INSIDE = 2
+
+
+container_kw = ["#LAST_STOREY"]
 
 
 class Rule:
@@ -108,7 +112,7 @@ class Parser:
         self._file = ifcopenshell.open(path)
         self._scope = Scope.GLOBAL
         self._space_mode = Space.ALL
-        self._spaces = []
+        self._containers = []
         self._all_elements = []
         self._partial_elements = []
         self._rules = []
@@ -120,10 +124,10 @@ class Parser:
             self._all_elements += [{"ifc": e} for e in elements]
         return self
 
-    def on_spaces(self, names, mode=Space.ALL):
+    def contained_in(self, names, mode=Space.ALL):
         if bool(names):
-            self._scope = Scope.SPACE
-            self._spaces = names
+            self._scope = Scope.CONTAINER
+            self._containers = names
             self._space_mode = mode
         return self
 
@@ -136,8 +140,9 @@ class Parser:
             return self._error()
 
         for rule in self._rules:
-            if self._scope == Scope.SPACE:
-                query = " | ".join(map(lambda x: f'.IfcSpace[LongName *= "{x}"]', self._spaces))
+            if self._scope == Scope.CONTAINER:
+                space_names = map(lambda x: x not in container_kw, self._containers)
+                query = " | ".join(map(lambda x: f'.IfcSpace[LongName *= "{x}"]', space_names))
                 spaces = selector.parse(self._file, query)
                 ifc_elements = [e["ifc"] for e in self._all_elements]
 
@@ -197,6 +202,31 @@ class Parser:
                         if collision[0]:
                             for guid in collision[1]:
                                 func1(*find_ifc_element(guid=guid))
+
+                if "#LAST_STOREY" in self._containers:
+                    storeys = self._file.by_type("IfcBuildingStorey")
+                    last_storey = max(storeys, key=lambda x: self._get_location(x)[2])
+                    query = f"@ #{last_storey.GlobalId}"
+                    contained_elements = selector.parse(self._file, query)
+                    for element in filter(lambda x: x["ifc"] in contained_elements, self._all_elements):
+                        entity = IOSElement.get_type(
+                            element["ifc"]) if rule.on == On.TYPE else element["ifc"]
+
+                        if rule.mode == Mode.PSET and rule.on == On.ENTITY:
+                            self._search_pset_entity(
+                                rule.id, element, rule.pset, rule.attribute, rule.value, rule.op)
+
+                        if rule.mode == Mode.PSET and rule.on == On.TYPE:
+                            self._search_pset_type(
+                                rule.id, entity, element, rule.pset, rule.attribute, rule.value, rule.op)
+
+                        if rule.mode == Mode.DEFAULT:
+                            self._search_default(
+                                rule.id, entity, element, rule.attribute, rule.value, rule.op)
+
+                        if rule.mode == Mode.LOCATION:
+                            self._search_location(
+                                rule.id, element, rule.attribute, rule.value, rule.op)
 
             else:
                 for element in self._all_elements:
@@ -267,19 +297,33 @@ class Parser:
         if this_value is not None and self._solve(op, this_value, value):
             self._keep(element, str(id), this_value)
 
-    def _search_location(
-            self, id, element, attribute, value,
-            op):
+    def _get_location(self, element):
         def sum_tuples(t1, t2): return tuple(map(lambda x, y: x + y, t1, t2))
 
-        placement = element["ifc"].ObjectPlacement
+        placement = element.ObjectPlacement
         g_coords = (0, 0, 0)
         while bool(placement):
             coords = placement.RelativePlacement.Location.Coordinates
             g_coords = sum_tuples(g_coords, coords)
             placement = placement.PlacementRelTo
 
-        this_value = {"x": g_coords[0], "y": g_coords[1], "z": g_coords[2]}[attribute]
+        return g_coords
+
+    def _get_height(self, element, use_global=True):
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.USE_WORLD_COORDS, use_global)
+        settings.set(settings.CONVERT_BACK_UNITS, True)
+        shape = ifcopenshell.geom.create_shape(settings, element)
+        points = shape.geometry.verts
+        return max(points[2::3])
+
+    def _search_location(
+            self, id, element, attribute, value,
+            op):
+
+        location = self._get_location(element["ifc"])
+        gheight = self._get_height(element["ifc"])
+        this_value = {"x": location[0], "y": location[1], "z": location[2], "h": gheight}[attribute]
         if self._solve(op, this_value, value):
             self._keep(element, str(id), this_value)
 
