@@ -14,7 +14,7 @@ def parse_rule(d):
     for rfilter in d["filters"]:
         parser = Parser(file_path)
         parser.include(*rfilter["entities"])
-        parser.on_spaces(rfilter["spaces"])
+        parser.contained_in(rfilter["spaces"])
 
         for constraint in sorted(rfilter["constraints"], key=lambda x: x["index"]):
             rule = Rule(constraint["id"])

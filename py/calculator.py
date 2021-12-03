@@ -439,6 +439,14 @@ class Map(BinaryFunction):
         return f"({self.a} \\ : \\  {self.b})"
 
 
+class Max(UnaryFunction):
+    def solve(self, data):
+        return max(self.a.solve(data))
+
+    def __repr__(self):
+        return f"max({self.a})"
+
+
 # Main class
 class Calculator:
     @staticmethod
@@ -487,7 +495,7 @@ class Calculator:
         if r_pos < len(string) - 1:
             return
 
-        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "map": Map}
+        funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "map": Map, "max": Max}
 
         return {
             "args": string[l_pos + 1:r_pos].split(", "),
@@ -655,7 +663,7 @@ class Calculator:
             [" in ", LogicalMatrixIn],
             [" as ", As],
             [" x ", LogicalMatrixCross],
-            [" * ", Multiply],
+            [" * ", Multiply]
         ]
 
         return Calculator._parse_op(string, ops, Calculator._parse_formula)

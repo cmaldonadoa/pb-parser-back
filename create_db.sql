@@ -3,13 +3,15 @@ CREATE SCHEMA [ifc_bim];
 GO
 
 /* Region tables */
-CREATE TABLE [ifc_bim].[region] (
+CREATE TABLE [ifc_bim].[region]
+(
   [region_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([region_id])
 );
 
-CREATE TABLE [ifc_bim].[commune] (
+CREATE TABLE [ifc_bim].[commune]
+(
   [commune_id] INT NOT NULL IDENTITY,
   [region_id] INT NOT NULL,
   [name] VARCHAR(128) NOT NULL UNIQUE,
@@ -18,13 +20,15 @@ CREATE TABLE [ifc_bim].[commune] (
 );
 
 /* User tables */
-CREATE TABLE [ifc_bim].[role] (
+CREATE TABLE [ifc_bim].[role]
+(
   [role_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([role_id])
 );
 
-CREATE TABLE [ifc_bim].[user] (
+CREATE TABLE [ifc_bim].[user]
+(
   [user_id] INT NOT NULL IDENTITY,
   [region_id] INT NULL DEFAULT NULL,
   [username] VARCHAR(128) NOT NULL UNIQUE,
@@ -33,7 +37,8 @@ CREATE TABLE [ifc_bim].[user] (
   FOREIGN KEY ([region_id]) REFERENCES [ifc_bim].[region]([region_id]) ON DELETE SET NULL
 );
 
-CREATE TABLE [ifc_bim].[user_role] (
+CREATE TABLE [ifc_bim].[user_role]
+(
   [user_id] INT NOT NULL,
   [role_id] INT NOT NULL,
   PRIMARY KEY ([user_id], [role_id]),
@@ -42,13 +47,15 @@ CREATE TABLE [ifc_bim].[user_role] (
 );
 
 /* Tender tables */
-CREATE TABLE [ifc_bim].[building_type] (
+CREATE TABLE [ifc_bim].[building_type]
+(
   [building_type_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([building_type_id])
 );
 
-CREATE TABLE [ifc_bim].[tender] (
+CREATE TABLE [ifc_bim].[tender]
+(
   [tender_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL,
   [commune_id] INT NOT NULL,
@@ -68,24 +75,27 @@ CREATE TABLE [ifc_bim].[tender] (
   [created_by] INT NULL DEFAULT NULL,
   PRIMARY KEY ([tender_id]),
   FOREIGN KEY ([created_by]) REFERENCES [ifc_bim].[user]([user_id]) ON DELETE SET NULL,
-    FOREIGN KEY ([commune_id]) REFERENCES [ifc_bim].[commune]([commune_id]) ON DELETE CASCADE,
-    FOREIGN KEY ([building_type_id]) REFERENCES [ifc_bim].[building_type]([building_type_id]) ON DELETE CASCADE
+  FOREIGN KEY ([commune_id]) REFERENCES [ifc_bim].[commune]([commune_id]) ON DELETE CASCADE,
+  FOREIGN KEY ([building_type_id]) REFERENCES [ifc_bim].[building_type]([building_type_id]) ON DELETE CASCADE
 );
 
 /* Rule tables */
-CREATE TABLE [ifc_bim].[group] (
+CREATE TABLE [ifc_bim].[group]
+(
   [group_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([group_id])
 );
 
-CREATE TABLE [ifc_bim].[model_type] (
+CREATE TABLE [ifc_bim].[model_type]
+(
   [model_type_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([model_type_id])
 );
 
-CREATE TABLE [ifc_bim].[rule] (
+CREATE TABLE [ifc_bim].[rule]
+(
   [rule_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   [description] VARCHAR(512) NULL DEFAULT NULL,
@@ -95,7 +105,8 @@ CREATE TABLE [ifc_bim].[rule] (
   FOREIGN KEY ([created_by]) REFERENCES [ifc_bim].[user]([user_id]) ON DELETE SET NULL
 );
 
-CREATE TABLE [ifc_bim].[rule_group] (
+CREATE TABLE [ifc_bim].[rule_group]
+(
   [rule_id] INT NOT NULL,
   [group_id] INT NOT NULL,
   PRIMARY KEY ([rule_id], [group_id]),
@@ -103,7 +114,8 @@ CREATE TABLE [ifc_bim].[rule_group] (
   FOREIGN KEY ([group_id]) REFERENCES [ifc_bim].[group]([group_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[rule_model_type] (
+CREATE TABLE [ifc_bim].[rule_model_type]
+(
   [rule_id] INT NOT NULL,
   [model_type_id] INT NOT NULL,
   PRIMARY KEY ([rule_id], [model_type_id]),
@@ -111,7 +123,8 @@ CREATE TABLE [ifc_bim].[rule_model_type] (
   FOREIGN KEY ([model_type_id]) REFERENCES [ifc_bim].[model_type]([model_type_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[rule_building_type] (
+CREATE TABLE [ifc_bim].[rule_building_type]
+(
   [rule_id] INT NOT NULL,
   [building_type_id] INT NOT NULL,
   PRIMARY KEY ([rule_id], [building_type_id]),
@@ -120,19 +133,22 @@ CREATE TABLE [ifc_bim].[rule_building_type] (
 );
 
 /* Filter tables */
-CREATE TABLE [ifc_bim].[entity] (
+CREATE TABLE [ifc_bim].[entity]
+(
   [entity_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([entity_id])
 );
 
-CREATE TABLE [ifc_bim].[space] (
+CREATE TABLE [ifc_bim].[space]
+(
   [space_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([space_id])
 );
 
-CREATE TABLE [ifc_bim].[filter] (
+CREATE TABLE [ifc_bim].[filter]
+(
   [filter_id] INT NOT NULL IDENTITY,
   [rule_id] INT NOT NULL,
   [index] INT NOT NULL,
@@ -141,7 +157,8 @@ CREATE TABLE [ifc_bim].[filter] (
   FOREIGN KEY ([rule_id]) REFERENCES [ifc_bim].[rule]([rule_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[filter_entity] (
+CREATE TABLE [ifc_bim].[filter_entity]
+(
   [filter_id] INT NOT NULL,
   [entity_id] INT NOT NULL,
   PRIMARY KEY ([filter_id], [entity_id]),
@@ -149,7 +166,8 @@ CREATE TABLE [ifc_bim].[filter_entity] (
   FOREIGN KEY ([entity_id]) REFERENCES [ifc_bim].[entity]([entity_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[filter_space] (
+CREATE TABLE [ifc_bim].[filter_space]
+(
   [filter_id] INT NOT NULL,
   [space_id] INT NOT NULL,
   PRIMARY KEY ([filter_id], [space_id]),
@@ -158,19 +176,22 @@ CREATE TABLE [ifc_bim].[filter_space] (
 );
 
 /* Constraint tables */
-CREATE TABLE [ifc_bim].[operation] (
+CREATE TABLE [ifc_bim].[operation]
+(
   [operation_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([operation_id])
 );
 
-CREATE TABLE [ifc_bim].[on] (
+CREATE TABLE [ifc_bim].[on]
+(
   [on_id] INT NOT NULL IDENTITY,
   [name] VARCHAR(128) NOT NULL UNIQUE,
   PRIMARY KEY ([on_id])
 );
 
-CREATE TABLE [ifc_bim].[constraint] (
+CREATE TABLE [ifc_bim].[constraint]
+(
   [constraint_id] INT NOT NULL IDENTITY,
   [operation_id] INT NOT NULL,
   [on_id] INT NOT NULL,
@@ -183,7 +204,8 @@ CREATE TABLE [ifc_bim].[constraint] (
   FOREIGN KEY ([filter_id]) REFERENCES [ifc_bim].[filter]([filter_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[expected_value] (
+CREATE TABLE [ifc_bim].[expected_value]
+(
   [expected_value_id] INT NOT NULL IDENTITY,
   [constraint_id] INT NOT NULL,
   [value] VARCHAR(128) NOT NULL,
@@ -191,7 +213,8 @@ CREATE TABLE [ifc_bim].[expected_value] (
   FOREIGN KEY ([constraint_id]) REFERENCES [ifc_bim].[constraint]([constraint_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[pset_constraint] (
+CREATE TABLE [ifc_bim].[pset_constraint]
+(
   [pset_constraint_id] INT NOT NULL IDENTITY,
   [constraint_id] INT NOT NULL,
   [name_regexp] VARCHAR(128) NOT NULL,
@@ -199,14 +222,16 @@ CREATE TABLE [ifc_bim].[pset_constraint] (
   FOREIGN KEY ([constraint_id]) REFERENCES [ifc_bim].[constraint]([constraint_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[location_constraint] (
+CREATE TABLE [ifc_bim].[location_constraint]
+(
   [location_constraint_id] INT NOT NULL IDENTITY,
   [constraint_id] INT NOT NULL,
   PRIMARY KEY ([location_constraint_id]),
   FOREIGN KEY ([constraint_id]) REFERENCES [ifc_bim].[constraint]([constraint_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[attribute_constraint] (
+CREATE TABLE [ifc_bim].[attribute_constraint]
+(
   [attribute_constraint_id] INT NOT NULL IDENTITY,
   [constraint_id] INT NOT NULL,
   PRIMARY KEY ([attribute_constraint_id]),
@@ -214,7 +239,8 @@ CREATE TABLE [ifc_bim].[attribute_constraint] (
 );
 
 /* File tables */
-CREATE TABLE [ifc_bim].[file] (
+CREATE TABLE [ifc_bim].[file]
+(
   [file_id] INT NOT NULL IDENTITY,
   [model_type_id] INT NOT NULL,
   [name] VARCHAR(128) NOT NULL UNIQUE,
@@ -225,7 +251,8 @@ CREATE TABLE [ifc_bim].[file] (
   FOREIGN KEY ([model_type_id]) REFERENCES [ifc_bim].[model_type]([model_type_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[file_metadata] (
+CREATE TABLE [ifc_bim].[file_metadata]
+(
   [file_metadata_id] INT NOT NULL IDENTITY,
   [file_id] INT NOT NULL,
   [constraint_id] INT NOT NULL,
@@ -235,7 +262,8 @@ CREATE TABLE [ifc_bim].[file_metadata] (
   FOREIGN KEY ([constraint_id]) REFERENCES [ifc_bim].[constraint]([constraint_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[file_metadata_filter] (
+CREATE TABLE [ifc_bim].[file_metadata_filter]
+(
   [file_metadata_filter_id] INT NOT NULL IDENTITY,
   [file_id] INT NOT NULL,
   [filter_id] INT NOT NULL,
@@ -245,7 +273,8 @@ CREATE TABLE [ifc_bim].[file_metadata_filter] (
   FOREIGN KEY ([filter_id]) REFERENCES [ifc_bim].[filter]([filter_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[metadata_value] (
+CREATE TABLE [ifc_bim].[metadata_value]
+(
   [metadata_value_id] INT NOT NULL IDENTITY,
   [file_metadata_id] INT NOT NULL,
   [value] VARCHAR(255) NOT NULL,
@@ -254,7 +283,8 @@ CREATE TABLE [ifc_bim].[metadata_value] (
 );
 
 /* Result tables */
-CREATE TABLE [ifc_bim].[result] (
+CREATE TABLE [ifc_bim].[result]
+(
   [result_id] INT NOT NULL IDENTITY,
   [file_id] INT NOT NULL,
   [rule_id] INT NOT NULL,
@@ -266,7 +296,8 @@ CREATE TABLE [ifc_bim].[result] (
   FOREIGN KEY ([tender_id]) REFERENCES [ifc_bim].[tender]([tender_id]) ON DELETE CASCADE
 );
 
-CREATE TABLE [ifc_bim].[result_value] (
+CREATE TABLE [ifc_bim].[result_value]
+(
   [result_value_id] INT NOT NULL IDENTITY,
   [result_id] INT NOT NULL,
   [value] VARCHAR(255) NOT NULL,
@@ -276,7 +307,8 @@ CREATE TABLE [ifc_bim].[result_value] (
 
 /* Constants */
 INSERT INTO
-  [ifc_bim].[operation]([name])
+  [ifc_bim].[operation]
+  ([name])
 VALUES
   ('EQUAL'),
   ('NOT_EQUAL'),
@@ -288,39 +320,45 @@ VALUES
   ('NOT_EXISTS');
 
 INSERT INTO
-  [ifc_bim].[on]([name])
+  [ifc_bim].[on]
+  ([name])
 VALUES
   ('ENTITY'),
   ('TYPE');
 
 INSERT INTO
-  [ifc_bim].[group]([name])
+  [ifc_bim].[group]
+  ([name])
 VALUES
   ('MEI'),
   ('DS19'),
   ('Normativas');
 
 INSERT INTO
-  [ifc_bim].[role]([name])
+  [ifc_bim].[role]
+  ([name])
 VALUES
   ('ADMIN'),
   ('REVIEWER');
 
 INSERT INTO
-  [ifc_bim].[model_type]([name])
+  [ifc_bim].[model_type]
+  ([name])
 VALUES
   ('ARQUITECTURA'),
   ('SITIO'),
   ('VOLUMETRICO');
 
 INSERT INTO
-  [ifc_bim].[building_type]([name])
+  [ifc_bim].[building_type]
+  ([name])
 VALUES
   ('HOUSE'),
   ('APARTMENT');
 
 INSERT INTO
-  [ifc_bim].[region]([name])
+  [ifc_bim].[region]
+  ([name])
 VALUES
   ('Región de Arica y Parinacota'),
   ('Región de Tarapacá'),
@@ -340,7 +378,8 @@ VALUES
   ('Región de Magallanes y de la Antártica Chilena');
 
 INSERT INTO
-  [ifc_bim].[commune]([region_id], [name])
+  [ifc_bim].[commune]
+  ([region_id], [name])
 VALUES
   (1, 'Arica'),
   (1, 'Camarones'),

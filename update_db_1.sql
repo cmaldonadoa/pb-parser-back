@@ -4,7 +4,8 @@ ALTER COLUMN
   [ifc_guid] VARCHAR(255);
 
 INSERT INTO
-  [ifc_bim].[entity]([name])
+  [ifc_bim].[entity]
+  ([name])
 VALUES
   ('IfcActionRequest'),
   ('IfcActor'),

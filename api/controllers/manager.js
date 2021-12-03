@@ -1,5 +1,6 @@
 var exec = require("child_process").execSync;
 const model = require("../models/manager.js");
+const logger = require("../utils/logger");
 
 module.exports = {
   createRule: async (req, res) => {
@@ -7,7 +8,7 @@ module.exports = {
       const ruleId = await model.createRule(req.userId, req.body);
       res.status(200).json({ status: 200, ruleId });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -17,7 +18,7 @@ module.exports = {
       await model.updateRule(ruleId, req.body);
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -27,7 +28,7 @@ module.exports = {
       const data = await model.getRulesByGroupHeader(parseInt(groupId));
       res.status(200).json({ status: 200, rules: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -37,7 +38,7 @@ module.exports = {
       const data = await model.getRuleFull(parseInt(ruleId));
       res.status(200).json({ status: 200, rule: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -47,7 +48,7 @@ module.exports = {
       await model.deleteRule(ruleId);
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -60,7 +61,7 @@ module.exports = {
       );
       res.status(200).json({ status: 200, latex: buffer.toString() });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -89,7 +90,7 @@ module.exports = {
       }
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -98,7 +99,7 @@ module.exports = {
       const data = await model.getGroups();
       res.status(200).json({ status: 200, groups: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -108,7 +109,7 @@ module.exports = {
       const data = await model.getRegions();
       res.status(200).json({ status: 200, regions: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -119,7 +120,7 @@ module.exports = {
       const data = await model.getCommunes(regionId);
       res.status(200).json({ status: 200, communes: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -129,7 +130,7 @@ module.exports = {
       const tenderId = await model.createTender(req.userId, req.body);
       res.status(200).json({ status: 200, tenderId });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -139,7 +140,7 @@ module.exports = {
       const data = await model.getTenders(req.userId);
       res.status(200).json({ status: 200, tenders: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -149,7 +150,7 @@ module.exports = {
       const data = await model.getTender(tenderId);
       res.status(200).json({ status: 200, tender: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -158,7 +159,7 @@ module.exports = {
       const data = await model.getTendersUser(req.userId);
       res.status(200).json({ status: 200, tenders: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -167,7 +168,7 @@ module.exports = {
       const data = await model.getRulesUser(req.userId);
       res.status(200).json({ status: 200, rules: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -177,7 +178,7 @@ module.exports = {
       await model.removeTender(tenderId);
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -188,7 +189,7 @@ module.exports = {
       await model.updateTender(tenderId, req.body);
       res.status(200).json({ status: 200 });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -197,7 +198,7 @@ module.exports = {
       const id = await model.createGroup(req.body.name);
       res.status(200).json({ status: 200, group: id });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
@@ -207,7 +208,7 @@ module.exports = {
       const data = await model.getEntities();
       res.status(200).json({ status: 200, entities: data });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ status: 500 });
     }
   },
