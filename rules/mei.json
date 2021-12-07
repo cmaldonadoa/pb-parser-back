@@ -1,0 +1,470 @@
+[
+  {
+    "name": "Posición y orientación local",
+    "description": "La posición local del edificio o infraestructura debe estar coordinada y cercana al origen.",
+    "formula": "count(#p0) = 1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingElementProxy"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "Name",
+            "operation": "EQUAL",
+            "values": ["ORIGEN"]
+          },
+          {
+            "on": "ENTITY",
+            "type": "LOCATION",
+            "attribute": "x",
+            "operation": "EQUAL",
+            "values": [0]
+          },
+          {
+            "on": "ENTITY",
+            "type": "LOCATION",
+            "attribute": "y",
+            "operation": "EQUAL",
+            "values": [0]
+          },
+          {
+            "on": "ENTITY",
+            "type": "LOCATION",
+            "attribute": "z",
+            "operation": "EQUAL",
+            "values": [0]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Niveles del proyecto y su denominación",
+    "description": "Todos los niveles de un proyecto están clasificados numéricamente y con una descripción textual.",
+    "formula": "#p0 = #p1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "Name",
+            "operation": "EQUAL",
+            "values": ["\\d\\d-\\w+"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Uso correcto de las entidades",
+    "description": "Las entidades IFC cuentan con la clase apropiada.",
+    "formula": "count(#p0) = 1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingElementProxy"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Estructura y denominación",
+    "description": "Los objetos tienen correctamente asociado su tipo.",
+    "formula": "#p0 - (#p1 | #p2 | #p3) = empty",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "PredefinedType",
+            "operation": "EQUAL",
+            "values": ["USERDEFINED"]
+          },
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "ObjectType",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "PredefinedType",
+            "operation": "NOT_EQUAL",
+            "values": ["USERDEFINED"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcObject"],
+        "constraints": [
+          {
+            "on": "TYPE",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Sistema de Clasificación",
+    "description": "Todos los objetos cuentan con un sistema de clasificación asociado.",
+    "formula": "#p0 <= #p1[RelatedObjects]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRelAssociatesClassification"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "RelatedObjects",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Indique el material correcto de los objetos",
+    "description": "Los objetos cuentan con una descripción del material correspondiente.",
+    "formula": "#p0 = #p1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_\\w+Common",
+            "attribute": "Material",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Elementos de carga",
+    "description": "Los elementos que correspondan poseen la propiedad LoadBearing bien definida.",
+    "formula": "#p0 = #p1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcFooting",
+          "IfcMember",
+          "IfcPile",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_\\w+Common",
+            "attribute": "LoadBearing",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcFooting",
+          "IfcMember",
+          "IfcPile",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Elemenos exteriores",
+    "description": "Los elementos que correspondan poseen la propiedad IsExternal bien definida.",
+    "formula": "#p0 = #p1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcJunctionBox",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRailing",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcShadingDevice",
+          "IfcSlab",
+          "IfcSpace",
+          "IfcSpatialZone",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow",
+          "IfcZone"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_\\w+Common",
+            "attribute": "IsExternal",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcJunctionBox",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRailing",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcShadingDevice",
+          "IfcSlab",
+          "IfcSpace",
+          "IfcSpatialZone",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow",
+          "IfcZone"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Resistencia al fuego",
+    "description": "Los elementos que correspondan poseen la propiedad FireRating bien definida.",
+    "formula": "#p0 = #p1",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_\\w+Common",
+            "attribute": "FireRating",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": [
+          "IfcBeam",
+          "IfcChimney",
+          "IfcColumn",
+          "IfcCovering",
+          "IfcCurtainWall",
+          "IfcDoor",
+          "IfcMember",
+          "IfcPlate",
+          "IfcRamp",
+          "IfcRoof",
+          "IfcSlab",
+          "IfcStair",
+          "IfcWall",
+          "IfcWindow"
+        ],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Proyecto Específico",
+    "description": "",
+    "formula": "(count(#p0) >= $VULNERABLE) and (count(#p1) >= $MEDIOS_1) and (count(#p2) >= $MEDIOS_2)",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcZone"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "ObjectType",
+            "operation": "EQUAL",
+            "values": ["VULNERABLE"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcZone"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "ObjectType",
+            "operation": "EQUAL",
+            "values": ["MEDIO_1"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcZone"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "ObjectType",
+            "operation": "EQUAL",
+            "values": ["MEDIO_2"]
+          }
+        ]
+      }
+    ]
+  }
+]
