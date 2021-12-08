@@ -75,6 +75,25 @@ class Manager {
           );
         }
       },
+      linkFilterEntitiesExcluded: async (filterId, entitiesList) => {
+        for await (const entity of entitiesList) {
+          let entityId = null;
+          const entities = await this.sqlManager.get(
+            "SELECT [entity_id] FROM [ifc_bim].[entity] WHERE [name] = ?",
+            [entity]
+          );
+          if (entities.length > 0) {
+            entityId = entities[0].entity_id;
+          } else {
+            throw new Error("Unknown IFC entity ");
+          }
+
+          await this.sqlManager.insert(
+            "INSERT INTO [ifc_bim].[filter_entity_excluded] ([filter_id], [entity_id]) VALUES (?, ?)",
+            [filterId, entityId]
+          );
+        }
+      },
       linkFilterSpaces: async (filterId, spacesList) => {
         for await (const space of spacesList) {
           let spaceId = null;
@@ -217,6 +236,17 @@ class Manager {
           .then((res) => res.map((e) => e.name));
         return result;
       },
+      getEntitiesExcluded: async (filterId) => {
+        const result = await this.sqlManager
+          .get(
+            "SELECT e.[name] FROM [ifc_bim].[entity] e " +
+              "JOIN [ifc_bim].[filter_entity_excluded] r ON e.[entity_id] = r.[entity_id] " +
+              "WHERE r.[filter_id] = ?",
+            [filterId]
+          )
+          .then((res) => res.map((e) => e.name));
+        return result;
+      },
       getConstraints: async (filterId) => {
         const result = await this.sqlManager.get(
           "SELECT c.[constraint_id], c.[operation_id], c.[on_id], c.[attribute], c.[index], r.[name] op_name, s.[name] on_name " +
@@ -298,6 +328,12 @@ class Manager {
           [filterId]
         );
       },
+      unlinkFilterEntitiesExcluded: async (filterId) => {
+        await this.sqlManager.delete(
+          "DELETE FROM [ifc_bim].[filter_entity_excluded] WHERE [filter_id] = ?",
+          [filterId]
+        );
+      },
       unlinkFilterSpaces: async (filterId) => {
         await this.sqlManager.delete(
           "DELETE FROM [ifc_bim].[filter_space] WHERE [filter_id] = ?",
@@ -374,6 +410,11 @@ const getRule = async (ruleId) => {
 
       const entities = await manager.getter.getEntities(filter.filter_id);
       filterObject.entities = entities;
+
+      const excluded = await manager.getter.getEntitiesExcluded(
+        filter.filter_id
+      );
+      filterObject.excluded = excluded;
 
       const constraints = await manager.getter.getConstraints(filter.filter_id);
       const constraintsArray = [];
@@ -490,6 +531,10 @@ module.exports = {
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
+        await manager.creator.linkFilterEntitiesExcluded(
+          filterId,
+          filter.excluded
+        );
 
         for await (const constraint of filter.constraints) {
           const operationId = await manager.getter.getOperation(
@@ -546,6 +591,7 @@ module.exports = {
         let filterId = filter.id;
         if (!!filterId) {
           await manager.updater.updateFilter(ruleId, filterId, filter.index);
+          await manager.deleter.unlinkFilterEntitiesExcluded(filterId);
           await manager.deleter.unlinkFilterEntities(filterId);
           await manager.deleter.unlinkFilterSpaces(filterId);
         } else {
@@ -558,6 +604,10 @@ module.exports = {
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
+        await manager.creator.linkFilterEntitiesExcluded(
+          filterId,
+          filter.excluded
+        );
 
         for await (const constraint of filter.constraints) {
           const operationId = await manager.getter.getOperation(

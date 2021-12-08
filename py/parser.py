@@ -119,9 +119,21 @@ class Parser:
 
     # Public methods
     def include(self, *ifc_entities):
+        temp = set()
         for ifc_entity in ifc_entities:
             elements = self._file.by_type(ifc_entity)
-            self._all_elements += [{"ifc": e} for e in elements]
+            temp |= set(elements)
+
+        self._all_elements = [{"ifc": e} for e in elements]
+        return self
+
+    def exclude(self, *ifc_entities):
+        temp = set()
+        for ifc_entity in ifc_entities:
+            elements = self._file.by_type(ifc_entity)
+            temp |= set(elements)
+
+        self._all_elements = list(filter(lambda e: e["ifc"] not in temp, self._all_elements))
         return self
 
     def contained_in(self, names, mode=Space.ALL):
