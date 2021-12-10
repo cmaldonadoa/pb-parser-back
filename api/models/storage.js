@@ -78,7 +78,7 @@ module.exports = {
           "SELECT [name] FROM [ifc_bim].[model_type] WHERE [model_type_id] = ?",
           [result.model_type_id]
         )
-        .then((res) => res[0]);
+        .then((res) => res[0].name);
 
       return { file: result, type };
     } catch (error) {
