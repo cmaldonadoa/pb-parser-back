@@ -21,7 +21,7 @@ module.exports = {
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
-            rules.filter((e) => e.modelTypes.indexOf(type[0].name) >= 0)
+            rules.filter((e) => e.modelTypes.indexOf(type) >= 0)
           )}'`
         );
 
@@ -128,7 +128,7 @@ module.exports = {
         rules = rules.filter(
           (e) =>
             e.buildingType.indexOf(tenderId.building_type_name) >= 0 &&
-            e.modelTypes.indexOf(type[0].name) >= 0
+            e.modelTypes.indexOf(type) >= 0
         );
         rules = result.map((r) => ({
           id: r.id,
@@ -247,7 +247,7 @@ module.exports = {
         {
           filename: file.name,
           username,
-          type: type[0].name,
+          type,
           tender: tender.name,
           data,
         },

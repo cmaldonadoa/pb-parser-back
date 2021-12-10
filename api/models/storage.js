@@ -73,10 +73,12 @@ module.exports = {
         ])
         .then((res) => res[0]);
 
-      const type = await db.get(
-        "SELECT [name] FROM [ifc_bim].[model_type] WHERE [model_type_id] = ?",
-        [result.model_type_id]
-      );
+      const type = await db
+        .get(
+          "SELECT [name] FROM [ifc_bim].[model_type] WHERE [model_type_id] = ?",
+          [result.model_type_id]
+        )
+        .then((res) => res[0]);
 
       return { file: result, type };
     } catch (error) {
