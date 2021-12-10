@@ -709,15 +709,20 @@ module.exports = {
       const tenderId = await db.insert(
         "INSERT INTO [ifc_bim].[tender](" +
           "[name],[commune_id],[address],[property_role],[constructability_coef]," +
+          "[upper_floors_coef],[total_units],[parking_lots],[building_height]," +
           "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
           "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
           data.commune,
           data.address,
           data.propertyRole,
           data.constructabilityCoef,
+          data.upperFloorsCoef,
+          data.totalUnits,
+          data.parkingLots,
+          data.buildingHeight,
           data.soilOccupancyCoef,
           buildingType[0].building_type_id,
           data.angle,
@@ -838,7 +843,8 @@ module.exports = {
         "UPDATE [ifc_bim].[tender] SET " +
           "[name] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
-          "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
+          "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ?, " +
+          "[upper_floors_coef] = ?, [total_units] = ?, [parking_lots] = ?, [building_height] = ?" +
           "WHERE [tender_id] = ?",
         [
           data.name,
@@ -856,6 +862,10 @@ module.exports = {
           data.medios2,
           data.isHandicapMedios2 ? data.handicapMedios2 : 0,
           data.total,
+          data.upperFloorsCoef,
+          data.totalUnits,
+          data.parkingLots,
+          data.buildingHeight,
           tenderId,
         ]
       );
