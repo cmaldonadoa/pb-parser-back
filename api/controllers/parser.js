@@ -264,6 +264,51 @@ module.exports = {
         return rv;
       }, {});
 
+      if (Object.keys(data).includes("MEI")) {
+        const intersections = await parser.getIntersections(fileId);
+
+        const isNameValid = await storage
+          .getFile({ id: fileId })
+          .then((res) => res.is_valid);
+
+        data["MEI"].push({
+          name: "Nombre del archivo",
+          description:
+            "El nombre del archivo cumple el estándar BIM para proyectos públicos",
+          group: "MEI",
+          bit: isNameValid,
+          values: [],
+          details: false,
+        });
+
+        data["MEI"].push({
+          name: "Intersecciones",
+          description: "El modelo no presenta interseccioens de entidades",
+          group: "MEI",
+          bit: intersections.intersections.length === 0,
+          values: intersections.intersections.map((intersection) => {
+            const [element1, element2] = intersection;
+            const [x1, y1, z1] = element1.location;
+            const [x2, y2, z2] = element2.location;
+            return `${element1.type} (GUID: ${element1.guid}) ubicado en (${x1}, ${y1}, ${z1}) intersecta con ${element2.type} (GUID: ${element2.guid}) ubicado en (${x2}, ${y2}, ${z2})`;
+          }),
+          details: false,
+        });
+
+        data["MEI"].push({
+          name: "Duplicados",
+          description: "El modelo no presenta elementos duplicados",
+          group: "MEI",
+          bit: intersections.duplicates.length === 0,
+          values: intersections.duplicates.map((duplicate) => {
+            const { guid1, guid2, type, location } = duplicate;
+            const [x, y, z] = location;
+            return `${type} ubicado en (${x}, ${y}, ${z})  (GUIDs: ${guid1} y ${guid2})`;
+          }),
+          details: false,
+        });
+      }
+
       await pdf.writePdf(
         fileId,
         {
