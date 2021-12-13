@@ -441,7 +441,10 @@ class Map(BinaryFunction):
 
 class Max(UnaryFunction):
     def solve(self, data):
-        return max(self.a.solve(data))
+        a = self.a.solve(data)
+        if len(a) > 0:
+            return max(a)
+        return None
 
     def __repr__(self):
         return f"max({self.a})"
@@ -496,10 +499,12 @@ class Calculator:
             return
 
         funcs = {"sum": Sumatory, "count": Cardinality, "dist": Distance, "map": Map, "max": Max}
+        args = string[l_pos + 1:r_pos]
+        func = re.findall(r'\w+(?=\()', string[:l_pos + 1])[0]
 
         return {
-            "args": string[l_pos + 1:r_pos].split(", "),
-            "func": funcs[re.findall(r'\w+(?=\()', string[:l_pos + 1])[0]]
+            "args": args.split(", ") if func == "dist" or func == "map" else [args],
+            "func": funcs[func]
         }
 
     @staticmethod

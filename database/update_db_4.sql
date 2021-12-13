@@ -18,3 +18,6 @@ ADD [parking_lots] INT NULL DEFAULT NULL;
 
 ALTER TABLE [ifc_bim].[tender]
 ADD [building_height] FLOAT NULL DEFAULT NULL;
+
+ALTER TABLE [ifc_bim].[rule]
+ADD [display] VARCHAR(500) NULL DEFAULT NULL;

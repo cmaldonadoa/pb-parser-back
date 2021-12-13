@@ -281,20 +281,20 @@ module.exports = {
     await testConnection();
     await db.transaction();
     try {
-      const bit = result === false ? 0 : 1;
+      const [formulaResult, displayResult] = result;
+      const bit = formulaResult === false ? 0 : 1;
 
       const id = await db.insert(
         "INSERT INTO [ifc_bim].[result] ([file_id], [rule_id], [tender_id], [value]) VALUES (?, ?, ?, ?)",
         [fileId, ruleId, tenderId, bit]
       );
 
-      result =
-        !Array.isArray(result) && typeof result !== "boolean"
-          ? [result]
-          : result;
+      if (displayResult !== null) {
+        const values = !Array.isArray(displayResult)
+          ? [displayResult]
+          : displayResult;
 
-      if (Array.isArray(result)) {
-        for await (const value of result) {
+        for await (const value of values) {
           await db.insert(
             "INSERT INTO [ifc_bim].[result_value] ([result_id], [value]) VALUES (?, ?)",
             [id, value]

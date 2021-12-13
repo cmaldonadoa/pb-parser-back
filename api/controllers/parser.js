@@ -145,20 +145,35 @@ module.exports = {
           }));
 
         for await (const rule of rules) {
-          const { id: ruleId, formula } = rule;
+          const { id: ruleId, formula, display } = rule;
 
           const { ruleMetadata, ruleMap } = await parser.getRuleMetadata({
             fileId,
             ruleId,
           });
 
-          const buffer = exec(
-            `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${JSON.stringify(
-              ruleMetadata
-            )}' '${JSON.stringify(ruleMap)}' '${JSON.stringify(vars)}'`
-          );
+          const metastr = JSON.stringify(ruleMetadata);
+          const mapstr = JSON.stringify(ruleMap);
+          const varstr = JSON.stringify(vars);
 
-          const result = JSON.parse(buffer.toString());
+          const result = [];
+
+          const buffer1 = exec(
+            `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${metastr}' '${mapstr}' '${varstr}'`
+          );
+          const result1 = JSON.parse(buffer1.toString());
+          result.push(result1);
+
+          if (!!display) {
+            const buffer2 = exec(
+              `python3 ${__dirname}/../../py/data_checker.py '${display}' '${metastr}' '${mapstr}' '${varstr}'`
+            );
+
+            const result2 = JSON.parse(buffer2.toString());
+            result.push(result2);
+          } else {
+            result.push(null);
+          }
 
           await parser.saveResult(fileId, ruleId, tenderId, result);
         }

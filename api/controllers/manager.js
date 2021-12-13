@@ -74,11 +74,13 @@ module.exports = {
       for await (const rule of rules) {
         rule.group = groupId;
         rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
+        rule.display = rule.display || null;
         rule.filters = rule.filters.map((f, i) => ({
           ...f,
           index: i,
           name: "p" + i,
           spaces: f.spaces || [],
+          excluded: f.excluded || [],
           constraints: f.constraints.map((c, j) => ({
             ...c,
             index: j,

@@ -6,10 +6,10 @@ class Manager {
   constructor(sqlManager) {
     this.sqlManager = sqlManager;
     this.creator = {
-      newRule: async (userId, name, formula, description) => {
+      newRule: async (userId, name, formula, description, display) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by]) VALUES (?, ?, ?, ?)",
-          [name, formula, description, userId]
+          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by], [display]) VALUES (?, ?, ?, ?, ?)",
+          [name, formula, description, userId, display]
         );
         return result;
       },
@@ -178,7 +178,7 @@ class Manager {
       getRule: async (ruleId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT [name], [formula], [description] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
+            "SELECT [name], [formula], [description], [display] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
             [ruleId]
           )
           .then((res) => res[0])
@@ -278,10 +278,10 @@ class Manager {
       },
     };
     this.updater = {
-      updateRule: async (ruleId, name, formula, description) => {
+      updateRule: async (ruleId, name, formula, description, display) => {
         await this.sqlManager.update(
-          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ? WHERE [rule_id] = ?",
-          [name, formula, description, ruleId]
+          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ?, [display] = ? WHERE [rule_id] = ?",
+          [name, formula, description, display, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, index) => {
@@ -388,6 +388,7 @@ const getRule = async (ruleId) => {
     result.name = rule.name;
     result.formula = rule.formula;
     result.description = rule.description;
+    result.display = rule.display;
 
     const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
@@ -515,7 +516,8 @@ module.exports = {
         userId,
         data.name,
         data.formula,
-        data.description
+        data.description,
+        data.display
       );
 
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
@@ -575,7 +577,8 @@ module.exports = {
         ruleId,
         data.name,
         data.formula,
-        data.description
+        data.description,
+        data.display
       );
 
       await manager.deleter.unlinkRuleModelTypes(ruleId);
