@@ -9,19 +9,26 @@ const logger = require("../utils/logger");
 module.exports = {
   parse: async (req, res) => {
     const fileId = parseInt(req.body.file_id);
+    const tenderId = parseInt(req.body.tender_id);
     const groupIds = req.body.group_ids.split(",");
     const path = `${__dirname}/../../files/${fileId}`;
 
     try {
       // Parse rules
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
+      const tender = await manager.getTender(tenderId);
+
       for await (const groupId of groupIds) {
         const rules = await manager.getRulesByGroupFull(parseInt(groupId));
         const buffer1 = exec(
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
-            rules.filter((e) => e.modelTypes.indexOf(type) >= 0)
+            rules.filter(
+              (e) =>
+                e.buildingTypes.includes(tender.building_type_name) &&
+                e.modelTypes.includes(type)
+            )
           )}'`
         );
 
@@ -121,21 +128,21 @@ module.exports = {
       await parser.deleteResults(fileId);
 
       for await (const groupId of groupIds) {
-        let rules = [];
+        const groupRules = await manager.getRulesByGroupFull(parseInt(groupId));
 
-        const result = await manager.getRulesByGroupFull(parseInt(groupId));
-
-        rules = rules.filter(
-          (e) =>
-            e.buildingType.indexOf(tenderId.building_type_name) >= 0 &&
-            e.modelTypes.indexOf(type) >= 0
-        );
-        rules = result.map((r) => ({
-          id: r.id,
-          formula: r.formula,
-          name: r.name,
-          description: r.description,
-        }));
+        const rules = groupRules
+          .filter(
+            (e) =>
+              e.buildingTypes.includes(tender.building_type_name) &&
+              e.modelTypes.includes(type)
+          )
+          .map((r) => ({
+            id: r.id,
+            formula: r.formula,
+            name: r.name,
+            description: r.description,
+            display: r.display,
+          }));
 
         for await (const rule of rules) {
           const { id: ruleId, formula } = rule;
