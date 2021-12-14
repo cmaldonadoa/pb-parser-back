@@ -48,16 +48,19 @@ $ npm install
 
 # Utilización
 
-Es necesario crear una base de datos MySQL utilizando el archivo `create_db.sql`. Esto creará una base de datos llamada `ifc_bim` y todas las tablas necesarias para el funcionamiento de la API.
+Es necesario crear una base de datos Microsoft SQL Server utilizando el archivo `database/create_db.sql`, y posteriormente los archivos `database/update_db_X.sql` en orden ascendente. Esto creará una base de datos llamada `ifc_bim` y todas las tablas necesarias para el funcionamiento de la API.
 
 Luego, es necesario crear un archivo `.env` con las credenciales de la base de datos y el puerto a utilizar (usando como base el archivo `.env-template`).
 
 ```
-DB_HOST= hostname de la base de datos
-DB_USER= usuario de la base de datos
-DB_PASSWORD= constraseña del usuario
+DB_HOST= hostname para conectarse a la base de datos
+DB_USER= usuario para conectarse a la base de datos
+DB_PASSWORD= constraseña del usuario anterior
 DB_SCHEMA= nombre de la base de datos
-PORT = puerto a usar por la API
+DB_PORT= puerto para conectarse a la base de datos
+DB_DIALECT= dialecto utilizado en la base de datos (mssql)
+PORT= puerto a usar por la API
+JWT_KEY= llave privada para encriptar JWT
 ```
 
 Finalmente, para correr la API:
