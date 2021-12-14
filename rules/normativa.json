@@ -1,0 +1,349 @@
+[
+  {
+    "name": "Superficie de subdivisión predial mínima",
+    "formula": "(count(#p0) > 0) and #p0[GrossArea]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SiteBaseQuantities",
+            "attribute": "GrossArea",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Uso de Suelo",
+    "formula": "(count(#p0) > 0) and #p0[Restrictions]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_PropertyAgreement",
+            "attribute": "Restrictions",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Destino contemplado",
+    "formula": "(count(#p0) > 0) and #p0[MarketCategory]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuilding"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_BuildingUse",
+            "attribute": "MarketCategory",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Sistema de agrupamiento",
+    "formula": "(count(#p0) > 0) and #p0[OccupancyType]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuilding"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_BuildingCommon",
+            "attribute": "OccupancyType",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Coeficiente de constructibilidad",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and ((sum(#p0[GrossFloorArea]) / sum(#p1[GrossArea])) <= $CONSTRUCTIBILIDAD) and (sum(#p0[GrossFloorArea]) / sum(#p1[GrossArea]))",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SpaceBaseQuantities",
+            "attribute": "GrossFloorArea",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SiteBaseQuantities",
+            "attribute": "GrossArea",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Coeficiente de ocupación de suelo",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (count(#p2) > 0) and (((sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea])) <= $SUELO) and ((sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea]))",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "Decomposes",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SpaceBaseQuantities",
+            "attribute": "GrossFloorArea",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SiteBaseQuantities",
+            "attribute": "GrossArea",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "Name",
+            "operation": "EQUAL",
+            "values": ["00-"]
+          },
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "IsDecomposedBy",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Coeficiente de ocupación de pisos superiores",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (count(#p2) > 0) and ((sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea]))",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "Decomposes",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SpaceBaseQuantities",
+            "attribute": "GrossFloorArea",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Qto_SiteBaseQuantities",
+            "attribute": "GrossArea",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcBuildingStorey"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "Name",
+            "operation": "NOT_EQUAL",
+            "values": ["00-"]
+          },
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "IsDecomposedBy",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Exigencias de estacionamiento",
+    "formula": "count(#p0)",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "attribute",
+            "attribute": "PredefinedType",
+            "operation": "EQUAL",
+            "values": ["PARKING"]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Número de propiedad",
+    "formula": "(count(#p0) > 0) and #p0[LandID]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_LandRegistration",
+            "attribute": "LandID",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Rol de la propiedad",
+    "formula": "(count(#p0) > 0) and (#p0[LandTitleID] = $ROL)",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcSite"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_LandRegistration",
+            "attribute": "LandTitleID",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Unidades totales",
+    "formula": "count(#p0)",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcZone"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "Attribute",
+            "attribute": "LongName",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Calidad de edificio historico",
+    "formula": "(count(#p0) > 0) and #p0[IsLandmarked = True]",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcBuilding"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_BuildingCommon",
+            "attribute": "IsLandMarked",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Altura máxima de edificación",
+    "formula": "max(#p0[h])",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": ["#LAST_STOREY"],
+        "entities": ["IfcElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "LOCATION",
+            "attribute": "h",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -6,10 +6,10 @@ class Manager {
   constructor(sqlManager) {
     this.sqlManager = sqlManager;
     this.creator = {
-      newRule: async (userId, name, formula, description) => {
+      newRule: async (userId, name, formula, description, display) => {
         const result = await this.sqlManager.insert(
-          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by]) VALUES (?, ?, ?, ?)",
-          [name, formula, description, userId]
+          "INSERT INTO [ifc_bim].[rule] ([name], [formula], [description], [created_by], [display]) VALUES (?, ?, ?, ?, ?)",
+          [name, formula, description, userId, display]
         );
         return result;
       },
@@ -71,6 +71,25 @@ class Manager {
 
           await this.sqlManager.insert(
             "INSERT INTO [ifc_bim].[filter_entity] ([filter_id], [entity_id]) VALUES (?, ?)",
+            [filterId, entityId]
+          );
+        }
+      },
+      linkFilterEntitiesExcluded: async (filterId, entitiesList) => {
+        for await (const entity of entitiesList) {
+          let entityId = null;
+          const entities = await this.sqlManager.get(
+            "SELECT [entity_id] FROM [ifc_bim].[entity] WHERE [name] = ?",
+            [entity]
+          );
+          if (entities.length > 0) {
+            entityId = entities[0].entity_id;
+          } else {
+            throw new Error("Unknown IFC entity ");
+          }
+
+          await this.sqlManager.insert(
+            "INSERT INTO [ifc_bim].[filter_entity_excluded] ([filter_id], [entity_id]) VALUES (?, ?)",
             [filterId, entityId]
           );
         }
@@ -159,7 +178,7 @@ class Manager {
       getRule: async (ruleId) => {
         const result = await this.sqlManager
           .get(
-            "SELECT [name], [formula], [description] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
+            "SELECT [name], [formula], [description], [display] FROM [ifc_bim].[rule] WHERE [rule_id] = ?",
             [ruleId]
           )
           .then((res) => res[0])
@@ -217,6 +236,17 @@ class Manager {
           .then((res) => res.map((e) => e.name));
         return result;
       },
+      getEntitiesExcluded: async (filterId) => {
+        const result = await this.sqlManager
+          .get(
+            "SELECT e.[name] FROM [ifc_bim].[entity] e " +
+              "JOIN [ifc_bim].[filter_entity_excluded] r ON e.[entity_id] = r.[entity_id] " +
+              "WHERE r.[filter_id] = ?",
+            [filterId]
+          )
+          .then((res) => res.map((e) => e.name));
+        return result;
+      },
       getConstraints: async (filterId) => {
         const result = await this.sqlManager.get(
           "SELECT c.[constraint_id], c.[operation_id], c.[on_id], c.[attribute], c.[index], r.[name] op_name, s.[name] on_name " +
@@ -248,10 +278,10 @@ class Manager {
       },
     };
     this.updater = {
-      updateRule: async (ruleId, name, formula, description) => {
+      updateRule: async (ruleId, name, formula, description, display) => {
         await this.sqlManager.update(
-          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ? WHERE [rule_id] = ?",
-          [name, formula, description, ruleId]
+          "UPDATE [ifc_bim].[rule] SET [name] = ?, [formula] = ?, [description] = ?, [display] = ? WHERE [rule_id] = ?",
+          [name, formula, description, display, ruleId]
         );
       },
       updateFilter: async (ruleId, filterId, index) => {
@@ -295,6 +325,12 @@ class Manager {
       unlinkFilterEntities: async (filterId) => {
         await this.sqlManager.delete(
           "DELETE FROM [ifc_bim].[filter_entity] WHERE [filter_id] = ?",
+          [filterId]
+        );
+      },
+      unlinkFilterEntitiesExcluded: async (filterId) => {
+        await this.sqlManager.delete(
+          "DELETE FROM [ifc_bim].[filter_entity_excluded] WHERE [filter_id] = ?",
           [filterId]
         );
       },
@@ -352,6 +388,7 @@ const getRule = async (ruleId) => {
     result.name = rule.name;
     result.formula = rule.formula;
     result.description = rule.description;
+    result.display = rule.display;
 
     const modelTypes = await manager.getter.getModelTypes(ruleId);
     result.modelTypes = modelTypes;
@@ -374,6 +411,11 @@ const getRule = async (ruleId) => {
 
       const entities = await manager.getter.getEntities(filter.filter_id);
       filterObject.entities = entities;
+
+      const excluded = await manager.getter.getEntitiesExcluded(
+        filter.filter_id
+      );
+      filterObject.excluded = excluded;
 
       const constraints = await manager.getter.getConstraints(filter.filter_id);
       const constraintsArray = [];
@@ -474,7 +516,8 @@ module.exports = {
         userId,
         data.name,
         data.formula,
-        data.description
+        data.description,
+        data.display
       );
 
       await manager.creator.linkRuleModelTypes(ruleId, data.modelTypes);
@@ -490,6 +533,10 @@ module.exports = {
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
+        await manager.creator.linkFilterEntitiesExcluded(
+          filterId,
+          filter.excluded
+        );
 
         for await (const constraint of filter.constraints) {
           const operationId = await manager.getter.getOperation(
@@ -530,7 +577,8 @@ module.exports = {
         ruleId,
         data.name,
         data.formula,
-        data.description
+        data.description,
+        data.display
       );
 
       await manager.deleter.unlinkRuleModelTypes(ruleId);
@@ -546,6 +594,7 @@ module.exports = {
         let filterId = filter.id;
         if (!!filterId) {
           await manager.updater.updateFilter(ruleId, filterId, filter.index);
+          await manager.deleter.unlinkFilterEntitiesExcluded(filterId);
           await manager.deleter.unlinkFilterEntities(filterId);
           await manager.deleter.unlinkFilterSpaces(filterId);
         } else {
@@ -558,6 +607,10 @@ module.exports = {
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
+        await manager.creator.linkFilterEntitiesExcluded(
+          filterId,
+          filter.excluded
+        );
 
         for await (const constraint of filter.constraints) {
           const operationId = await manager.getter.getOperation(
@@ -659,15 +712,20 @@ module.exports = {
       const tenderId = await db.insert(
         "INSERT INTO [ifc_bim].[tender](" +
           "[name],[commune_id],[address],[property_role],[constructability_coef]," +
+          "[upper_floors_coef],[total_units],[parking_lots],[building_height]," +
           "[soil_occupancy_coef],[building_type_id],[angle],[vulnerable],[handicap_vulnerable]," +
           "[medios_1],[handicap_medios_1],[medios_2],[handicap_medios_2],[total], [created_by]) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           data.name,
           data.commune,
           data.address,
           data.propertyRole,
           data.constructabilityCoef,
+          data.upperFloorsCoef,
+          data.totalUnits,
+          data.parkingLots,
+          data.buildingHeight,
           data.soilOccupancyCoef,
           buildingType[0].building_type_id,
           data.angle,
@@ -788,7 +846,8 @@ module.exports = {
         "UPDATE [ifc_bim].[tender] SET " +
           "[name] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
-          "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ? " +
+          "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ?, " +
+          "[upper_floors_coef] = ?, [total_units] = ?, [parking_lots] = ?, [building_height] = ?" +
           "WHERE [tender_id] = ?",
         [
           data.name,
@@ -806,6 +865,10 @@ module.exports = {
           data.medios2,
           data.isHandicapMedios2 ? data.handicapMedios2 : 0,
           data.total,
+          data.upperFloorsCoef,
+          data.totalUnits,
+          data.parkingLots,
+          data.buildingHeight,
           tenderId,
         ]
       );

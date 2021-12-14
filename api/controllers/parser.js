@@ -9,19 +9,26 @@ const logger = require("../utils/logger");
 module.exports = {
   parse: async (req, res) => {
     const fileId = parseInt(req.body.file_id);
+    const tenderId = parseInt(req.body.tender_id);
     const groupIds = req.body.group_ids.split(",");
     const path = `${__dirname}/../../files/${fileId}`;
 
     try {
       // Parse rules
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
+      const tender = await manager.getTender(tenderId);
+
       for await (const groupId of groupIds) {
         const rules = await manager.getRulesByGroupFull(parseInt(groupId));
         const buffer1 = exec(
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
-            rules.filter((e) => e.modelTypes.indexOf(type[0].name) >= 0)
+            rules.filter(
+              (e) =>
+                e.buildingTypes.includes(tender.building_type_name) &&
+                e.modelTypes.includes(type)
+            )
           )}'`
         );
 
@@ -108,42 +115,65 @@ module.exports = {
         CONSTRUCTIBILIDAD: tender.constructability_coef,
         ROL: tender.property_role,
         ANGULO: tender.angle,
+        PISOS_SUPERIORES:
+          tender.upper_floors_coef === null ? -1 : tender.upper_floors_coef,
+        UNIDADES_TOTALES: tender.total_units === null ? -1 : tender.total_units,
+        ESTACIONAMIENTOS:
+          tender.parking_lots === null
+            ? Number.MAX_SAFE_INTEGER
+            : tender.parking_lots,
+        ALTURA: tender.building_height === null ? -1 : tender.building_height,
       };
 
       await parser.deleteResults(fileId);
 
       for await (const groupId of groupIds) {
-        let rules = [];
+        const groupRules = await manager.getRulesByGroupFull(parseInt(groupId));
 
-        const result = await manager.getRulesByGroupFull(parseInt(groupId));
-
-        rules = rules.filter(
-          (e) =>
-            e.buildingType.indexOf(tenderId.building_type_name) >= 0 &&
-            e.modelTypes.indexOf(type[0].name) >= 0
-        );
-        rules = result.map((r) => ({
-          id: r.id,
-          formula: r.formula,
-          name: r.name,
-          description: r.description,
-        }));
+        const rules = groupRules
+          .filter(
+            (e) =>
+              e.buildingTypes.includes(tender.building_type_name) &&
+              e.modelTypes.includes(type)
+          )
+          .map((r) => ({
+            id: r.id,
+            formula: r.formula,
+            name: r.name,
+            description: r.description,
+            display: r.display,
+          }));
 
         for await (const rule of rules) {
-          const { id: ruleId, formula } = rule;
+          const { id: ruleId, formula, display } = rule;
 
           const { ruleMetadata, ruleMap } = await parser.getRuleMetadata({
             fileId,
             ruleId,
           });
 
-          const buffer = exec(
-            `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${JSON.stringify(
-              ruleMetadata
-            )}' '${JSON.stringify(ruleMap)}' '${JSON.stringify(vars)}'`
-          );
+          const metastr = JSON.stringify(ruleMetadata);
+          const mapstr = JSON.stringify(ruleMap);
+          const varstr = JSON.stringify(vars);
 
-          const result = JSON.parse(buffer.toString());
+          const result = [];
+
+          const buffer1 = exec(
+            `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${metastr}' '${mapstr}' '${varstr}'`
+          );
+          const result1 = JSON.parse(buffer1.toString());
+          result.push(result1);
+
+          if (!!display) {
+            const buffer2 = exec(
+              `python3 ${__dirname}/../../py/data_checker.py '${display}' '${metastr}' '${mapstr}' '${varstr}'`
+            );
+
+            const result2 = JSON.parse(buffer2.toString());
+            result.push(result2);
+          } else {
+            result.push(null);
+          }
 
           await parser.saveResult(fileId, ruleId, tenderId, result);
         }
@@ -234,12 +264,57 @@ module.exports = {
         return rv;
       }, {});
 
+      if (Object.keys(data).includes("MEI")) {
+        const intersections = await parser.getIntersections(fileId);
+
+        const isNameValid = await storage
+          .getFile({ id: fileId })
+          .then((res) => res.is_valid);
+
+        data["MEI"].push({
+          name: "Nombre del archivo",
+          description:
+            "El nombre del archivo cumple el estándar BIM para proyectos públicos",
+          group: "MEI",
+          bit: isNameValid,
+          values: [],
+          details: false,
+        });
+
+        data["MEI"].push({
+          name: "Intersecciones",
+          description: "El modelo no presenta interseccioens de entidades",
+          group: "MEI",
+          bit: intersections.intersections.length === 0,
+          values: intersections.intersections.map((intersection) => {
+            const [element1, element2] = intersection;
+            const [x1, y1, z1] = element1.location;
+            const [x2, y2, z2] = element2.location;
+            return `${element1.type} (GUID: ${element1.guid}) ubicado en (${x1}, ${y1}, ${z1}) intersecta con ${element2.type} (GUID: ${element2.guid}) ubicado en (${x2}, ${y2}, ${z2})`;
+          }),
+          details: false,
+        });
+
+        data["MEI"].push({
+          name: "Duplicados",
+          description: "El modelo no presenta elementos duplicados",
+          group: "MEI",
+          bit: intersections.duplicates.length === 0,
+          values: intersections.duplicates.map((duplicate) => {
+            const { guid1, guid2, type, location } = duplicate;
+            const [x, y, z] = location;
+            return `${type} ubicado en (${x}, ${y}, ${z})  (GUIDs: ${guid1} y ${guid2})`;
+          }),
+          details: false,
+        });
+      }
+
       await pdf.writePdf(
         fileId,
         {
           filename: file.name,
           username,
-          type: type[0].name,
+          type,
           tender: tender.name,
           data,
         },
