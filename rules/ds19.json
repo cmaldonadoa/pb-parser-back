@@ -164,7 +164,7 @@
   {
     "name": "Estar-Comedor-Cocina: artefactos de cocina",
     "description": "Los artefactos de cocina se ubican en área de cocina, sin interferir con zona de estar o comedor",
-    "formula": "(#p0 & #p1 = empty) and (#p0 & #p2 = empty)",
+    "formula": "(count(#p0) > 0) and (#p0 & #p1 = empty) and (#p0 & #p2 = empty)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -219,7 +219,7 @@
   },
   {
     "name": "Estar-Comedor-Cocina: lavadora",
-    "description": "Cuenta con conexión de red fría y caliente y evacuación  de aguas servidas para lavadora, cuando esta se encuentre en la cocina.",
+    "description": "Cuenta con conexión de red fría y caliente y evacuación de aguas servidas para lavadora, cuando esta se encuentre en la cocina.",
     "formula": "(count(#p0) > 0) then ((count(#p1) > 0) and (count(#p2) > 0) and (count(#p3) > 0))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -346,7 +346,7 @@
   },
   {
     "name": "Estar-Comedor-Cocina: ventilación",
-    "description": "Cocina incluye ventilación hacia el exterior distinta a la  puerta de acceso a este recinto.  ",
+    "description": "Cocina incluye ventilación hacia el exterior distinta a la puerta de acceso a este recinto.",
     "formula": "(count(#p0) > 0) or (count(#p1) > 0)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -388,8 +388,9 @@
   },
   {
     "name": "Estar-Comedor-Cocina: grifería",
-    "description": "La grifería de cocina considera mecanismo de presión,  palanca o de fácil maniobra, y aireador. ",
-    "formula": "(count(#p0) > 0) and #p0[Description]",
+    "description": "La grifería de cocina considera mecanismo de presión, palanca o de fácil maniobra, y aireador. ",
+    "formula": "count(#p0) > 0",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -662,7 +663,7 @@
   {
     "name": "Dormitorio principal: ventana",
     "description": "Cuenta con ventana con un mínimo de 1m² y con al menos una ventana practicable.",
-    "formula": "(count(#p0) > 0) and p0[OverallHeight * OverallWidth >= 1]",
+    "formula": "(count(#p0) > 0) and #p0[OverallHeight * OverallWidth >= 1]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -742,8 +743,8 @@
   },
   {
     "name": "Segundo dormitorio: enchufes",
-    "description": "Cuenta con 2 enchufes dobles o uno triple",
-    "formula": "(count(#p0) > 0) then (count(#p1) >= 2 or count(#p2) >= 1)",
+    "description": "Cuenta con dos enchufes dobles o uno triple",
+    "formula": "(count(#p0) > 0) then ((count(#p1) >= 2) or (count(#p2) >= 1))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -872,7 +873,7 @@
     ]
   },
   {
-    "name": "Tercer dormitorio: echufes",
+    "name": "Tercer dormitorio: enchufes",
     "description": "Cuenta con 1 enchufe doble.",
     "formula": "(count(#p0) > 0) then (count(#p1) > 0)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -985,7 +986,7 @@
   },
   {
     "name": "Dormitorio adicional proyectado: ampliación",
-    "description": "Las viviendas que contemplen un dormitorio o dos  dormitorios deberán considerar, además, como  ampliación proyectada, un segundo o tercer dormitorio, según corresponda. ",
+    "description": "Las viviendas que contemplen un dormitorio o dos dormitorios deberán considerar, además, como ampliación proyectada, un segundo o tercer dormitorio, según corresponda. ",
     "formula": "((count(#p1) < 3) then (count(#p0) = 1)) and ((count(#p1) = 3) then (count(#p0) = 0))",
     "buildingTypes": ["HOUSE"],
     "filters": [
@@ -1254,7 +1255,7 @@
   },
   {
     "name": "Closet: cantidad de módulos",
-    "description": "Todos los dormitorios consideran espacio para el closet en su interior. Podría eximirse dentro de un dormitorio  respetando la cantidad total de módulos, menos el  principal. ",
+    "description": "Todos los dormitorios consideran espacio para el closet en su interior. Podría eximirse dentro de un dormitorio respetando la cantidad total de módulos, menos el principal. ",
     "formula": "(count(#p0) >= 5) and (count(#p1) > 0)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -1303,7 +1304,7 @@
   {
     "name": "Logia: lavadora",
     "description": "Cuenta con conexión red fría y caliente y evacuación de aguas servidas para lavadora y lavadero.",
-    "formula": "((count(#p0) > 0) then (((count(#p1) >= 2) and (count(#p2) >= 2)) and (count(#p3) >= 2))) and ((count(#p0) = 0) then (((count(#p1) > 0) and (count(#p2) > 0)) and (count(#p3) > 0)))",
+    "formula": "(count(#p0) > 0) then ((count(#p1) > 0) and (count(#p2) > 0) and (count(#p3) > 0))",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -1383,7 +1384,7 @@
   {
     "name": "Logia: recinto",
     "description": "Logia se encuentra separada de la cocina",
-    "formula": "count(#p0) = 0",
+    "formula": "(count(#p1) > 0) and (count(#p2) > 0) and (count(#p0) = 0)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -1396,6 +1397,32 @@
             "attribute": "LongName",
             "operation": "EQUAL",
             "values": ["COCINA"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "LongName",
+            "operation": "EQUAL",
+            "values": ["COCINA"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcSpace"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "LongName",
+            "operation": "EQUAL",
+            "values": ["LOGIA"]
           }
         ]
       }
@@ -1459,7 +1486,8 @@
   {
     "name": "Escaleras: ancho libre",
     "description": "Ancho libre útil de 70cm sin considerar pasamanos.",
-    "formula": "#p0[Width] - (#p1[Diameter] * (#p1[Name] x #p0[Name])) >= 0.7",
+    "formula": "((count(#p2) > 0) and (count(#p3) > 0)) then ((count(#p0) > 0) and (count(#p1) > 0) and (#p0[Width] - (#p1[Diameter] * (#p1[Name] x #p0[Name])) >= 0.7))",
+    "display": "#p1[Diameter] * (#p1[Name] x #p0[Name])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1499,13 +1527,37 @@
             "operation": "EXISTS"
           }
         ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcStairFlight"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRailing"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
       }
     ]
   },
   {
     "name": "Escaleras: pasamanos",
     "description": "En escaleras interiores se debe considerar pasamanos, con desarrollo a lo largo de toda la escalera.",
-    "formula": "(#p0[Length] x #p1[Length]) as (#p0[Name] x #p1[Name])",
+    "formula": "((count(#p2) > 0) and (count(#p3) > 0)) then ((count(#p0) > 0) and (count(#p1) > 0) and ((#p0[Length] x #p1[Length]) as (#p0[Name] x #p1[Name])))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1545,18 +1597,10 @@
             "operation": "EXISTS"
           }
         ]
-      }
-    ]
-  },
-  {
-    "name": "Escaleras: peldaños",
-    "description": "Considera peldaño típico con huella de 25cm mín. y contrahuella de 20cm máx.",
-    "formula": "count(#p0) = count(#p1)",
-    "buildingTypes": ["HOUSE", "APARTMENT"],
-    "filters": [
+      },
       {
         "spaces": [],
-        "entities": ["IfcStair"],
+        "entities": ["IfcStairFlight"],
         "constraints": [
           {
             "on": "ENTITY",
@@ -1568,12 +1612,44 @@
       },
       {
         "spaces": [],
-        "entities": ["IfcStair"],
+        "entities": ["IfcRailing"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Escaleras: peldaños",
+    "description": "Considera peldaño típico con huella de 25cm mín. y contrahuella de 20cm máx.",
+    "formula": "count(#p0) = count(#p1)",
+    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcStair", "IfcStairFlight"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcStair", "IfcStairFlight"],
         "constraints": [
           {
             "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "Pset_StairCommon",
+            "pset": "Pset_\\w+Common",
             "attribute": "RiserHeight",
             "operation": "LESSER_EQUAL",
             "values": [0.2]
@@ -1581,7 +1657,7 @@
           {
             "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "Pset_StairCommon",
+            "pset": "Pset_\\w+Common",
             "attribute": "TreadLength",
             "operation": "GREATER_EQUAL",
             "values": [0.25]
@@ -1591,7 +1667,7 @@
     ]
   },
   {
-    "name": "Escalera: alturas habitables",
+    "name": "Escaleras: alturas habitables",
     "description": "Mobiliario y áreas de uso se ubican en recintos de alturas habitables, según OGUC (1.6m libres).",
     "formula": "count(#p0) = count(#p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -1634,8 +1710,8 @@
   },
   {
     "name": "Puertas: ancho de puertas exteriores",
-    "description": "Puertas exteriores: ancho puerta acceso asegura un paso libre mínimo de 75cm",
-    "formula": "(#p0 = #p1) and (#p1[PanelWidth - PanelDepth >= 0.75])",
+    "description": "Puertas exteriores aseguran un paso libre mínimo de 75cm",
+    "formula": "(#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.75)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1668,14 +1744,38 @@
             "on": "TYPE",
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelWidth",
+            "attribute": "PanelDepth",
             "operation": "EXISTS"
           },
           {
-            "on": "TYPE",
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "FillsVoids",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRelFillsElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "RelatingOpeningElement",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcOpeningElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelDepth",
+            "pset": "Qto_OpeningElementBaseQuantities",
+            "attribute": "Width",
             "operation": "EXISTS"
           }
         ]
@@ -1684,8 +1784,8 @@
   },
   {
     "name": "Puertas: ancho de puertas interiores",
-    "description": "Puertas exteriores: ancho que asegure un paso libre mínimo de 65cm",
-    "formula": "(#p0 = #p1) and (#p1[PanelWidth - PanelDepth >= 0.65])",
+    "description": "Puertas interiores aseguran un paso libre mínimo de 65cm",
+    "formula": "(#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.65)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1718,14 +1818,38 @@
             "on": "TYPE",
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelWidth",
+            "attribute": "PanelDepth",
             "operation": "EXISTS"
           },
           {
-            "on": "TYPE",
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "FillsVoids",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRelFillsElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "RelatingOpeningElement",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcOpeningElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelDepth",
+            "pset": "Qto_OpeningElementBaseQuantities",
+            "attribute": "Width",
             "operation": "EXISTS"
           }
         ]
@@ -1756,7 +1880,7 @@
   },
   {
     "name": "Puertas: cantidad (departamentos)",
-    "description": "Se considera una puerta exterior y una puerta de salida a logia que contempla ventana y ventilación. Puede ser solución  puerta – ventana.  ",
+    "description": "Se considera una puerta exterior y una puerta de salida a logia que contempla ventana y ventilación. Puede ser solución puerta – ventana.  ",
     "formula": "(count(#p0) >= 1) and (count(#p1 & #p2) > 0)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
@@ -1817,7 +1941,8 @@
   {
     "name": "Calefón: certificación",
     "description": "Artefacto calefón certificado por la SEC.",
-    "formula": "(count(#p0) = count(#p1)) and (count(#p0) > 0) and #p0[Description]",
+    "formula": "(count(#p0) = count(#p1)) and (count(#p0) > 0)",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1857,7 +1982,8 @@
   {
     "name": "Calefón: tipo de gas",
     "description": "Artefacto calefón de acuerdo con el tipo de gas licuado o natural.",
-    "formula": "(count(#p0) = count(#p1)) and (count(#p0) > 0) and #p0[EnergySource]",
+    "formula": "(count(#p0) = count(#p1)) and (count(#p0) > 0)",
+    "display": "#p0[EnergySource]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1891,7 +2017,8 @@
   {
     "name": "Calefón: capacidad",
     "description": "Artefacto calefón con capacidad mínima de 7 litros.",
-    "formula": "(count(#p0) = count(#p1)) and (count(#p0) > 0)",
+    "formula": "(count(#p0) > 0) and (#p0[WaterStorageCapacity] >= 7)",
+    "display": "#p0[WaterStorageCapacity]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1903,19 +2030,6 @@
             "type": "PSET_QTO",
             "pset": "Pset_BoilerTypeCommon",
             "attribute": "WaterStorageCapacity",
-            "operation": "GREATER_EQUAL",
-            "values": [7]
-          }
-        ]
-      },
-      {
-        "spaces": [],
-        "entities": ["IfcBoiler"],
-        "constraints": [
-          {
-            "on": "ENTITY",
-            "type": "ATTRIBUTE",
-            "attribute": "GlobalId",
             "operation": "EXISTS"
           }
         ]
@@ -1979,8 +2093,9 @@
   },
   {
     "name": "Terminaciones: pisos (detalle)",
-    "description": "Pavimento de terminación de pisos deberán corresponder a un revestimiento tales como: cerámicas, piso flotante,  cubre piso, alfombras, etc. Se debe detallar el producto  específico.",
-    "formula": "#p0[FloorCovering]",
+    "description": "Pavimento de terminación de pisos deberán corresponder a un revestimiento tales como: cerámicas, piso flotante, cubre piso, alfombras, etc. Se debe detallar el producto específico.",
+    "formula": "count(#p0) > 0",
+    "display": "#p0[FloorCovering]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2014,7 +2129,7 @@
   },
   {
     "name": "Terminaciones: muros y cielos",
-    "description": "Los muros interiores y cielos de todos los recintos  consideran material de terminación.",
+    "description": "Los muros interiores y cielos de todos los recintos consideran material de terminación.",
     "formula": "#p0 = #p1",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -2077,7 +2192,8 @@
   {
     "name": "Terminaciones: muros (detalle)",
     "description": "Se debe detallar el producto específico de material de terminación para muros interiores de todos los recintos.",
-    "formula": "#p0[WallCovering]",
+    "formula": "count(#p0) > 0",
+    "display": "#p0[WallCovering]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2112,7 +2228,8 @@
   {
     "name": "Terminaciones: cielos (detalle)",
     "description": "Se debe detallar el producto específico de material de terminación para cielos de todos los recintos.",
-    "formula": "#p0[CeilingCovering]",
+    "formula": "count(#p0) > 0",
+    "display": "#p0[CeilingCovering]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2145,9 +2262,10 @@
     ]
   },
   {
-    "name": "Terminaciones: iluminación",
-    "description": "En casas, 2 centros de iluminación exterior, uno sobre la puerta de acceso y otro sobre la puerta exterior de la  cocina.",
+    "name": "Terminaciones: iluminación exterior",
+    "description": "En casas, existe un centro de iluminación sobre la puerta de acceso.",
     "formula": "(count(#p0) = 1) and (count(#p1) = 1) and (count(#p2) = 1) and (dist(#p3) <= 0.3)",
+    "display": "dist(#p3)",
     "buildingTypes": ["HOUSE"],
     "filters": [
       {
@@ -2238,9 +2356,9 @@
             "on": "ENTITY",
             "type": "PSET_QTO",
             "pset": "Pset_ElectricalDeviceCommon",
-            "attribute": "Sensivity",
+            "attribute": "Sensitivity",
             "operation": "EQUAL",
-            "values": [0.03]
+            "values": [3]
           }
         ]
       }
@@ -2282,7 +2400,7 @@
     "buildingTypes": ["HOUSE"],
     "filters": [
       {
-        "spaces": [],
+        "spaces": ["#LAST_STOREY"],
         "entities": ["IfcCovering"],
         "constraints": [
           {
@@ -2391,12 +2509,25 @@
   {
     "name": "Accesibilidad universal: acceso despejado",
     "description": "Se evitan obstáculos o barreras arquitectónicas en el acceso a cada departamento.",
-    "formula": "count(#p0) = 0",
+    "formula": "(count(#p0) = 0) and (count(#p1) <= 1)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
         "spaces": ["ACCESO_PRINCIPAL"],
         "entities": ["IfcBuildingElement"],
+        "excluded": ["IfcDoor"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": ["ACCESO_PRINCIPAL"],
+        "entities": ["IfcDoor"],
         "constraints": [
           {
             "on": "ENTITY",
@@ -2411,11 +2542,25 @@
   {
     "name": "Accesibilidad universal: puerta de acceso",
     "description": "Puertas exteriores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "#p0[PanelWidth - PanelDepth >= 0.8]",
-    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "formula": "(#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.8)",
+    "buildingTypes": ["APARTMENT"],
     "filters": [
       {
-        "spaces": ["ACCESO_PRINCIPAL"],
+        "spaces": [],
+        "entities": ["IfcDoor"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_DoorCommon",
+            "attribute": "IsExternal",
+            "operation": "EQUAL",
+            "values": ["True"]
+          }
+        ]
+      },
+      {
+        "spaces": [],
         "entities": ["IfcDoor"],
         "constraints": [
           {
@@ -2430,14 +2575,38 @@
             "on": "TYPE",
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelWidth",
+            "attribute": "PanelDepth",
             "operation": "EXISTS"
           },
           {
-            "on": "TYPE",
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "FillsVoids",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRelFillsElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "RelatingOpeningElement",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcOpeningElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelDepth",
+            "pset": "Qto_OpeningElementBaseQuantities",
+            "attribute": "Width",
             "operation": "EXISTS"
           }
         ]
@@ -2447,9 +2616,23 @@
   {
     "name": "Accesibilidad universal: puertas interiores",
     "description": "Puertas interiores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "#p0[PanelWidth - PanelDepth >= 0.8]",
-    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "formula": "(#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.8)",
+    "buildingTypes": ["APARTMENT"],
     "filters": [
+      {
+        "spaces": [],
+        "entities": ["IfcDoor"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_DoorCommon",
+            "attribute": "IsExternal",
+            "operation": "EQUAL",
+            "values": ["False"]
+          }
+        ]
+      },
       {
         "spaces": [],
         "entities": ["IfcDoor"],
@@ -2466,14 +2649,38 @@
             "on": "TYPE",
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelWidth",
+            "attribute": "PanelDepth",
             "operation": "EXISTS"
           },
           {
-            "on": "TYPE",
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "FillsVoids",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcRelFillsElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "RelatingOpeningElement",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcOpeningElement"],
+        "constraints": [
+          {
+            "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "IfcDoorPanelProperties",
-            "attribute": "PanelDepth",
+            "pset": "Qto_OpeningElementBaseQuantities",
+            "attribute": "Width",
             "operation": "EXISTS"
           }
         ]
@@ -2493,14 +2700,14 @@
           {
             "on": "ENTITY",
             "type": "LOCATION",
-            "attribute": "y",
+            "attribute": "z",
             "operation": "GREATER_EQUAL",
             "values": [0.4]
           },
           {
             "on": "ENTITY",
             "type": "LOCATION",
-            "attribute": "y",
+            "attribute": "z",
             "operation": "LESSER_EQUAL",
             "values": [1.2]
           }
@@ -2523,7 +2730,7 @@
   {
     "name": "Accesibilidad universal: interruptores",
     "description": "La altura de los interuptores no debe estar a menos de 40cm y a más de 1.2m del piso.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2540,14 +2747,14 @@
           {
             "on": "ENTITY",
             "type": "LOCATION",
-            "attribute": "y",
+            "attribute": "z",
             "operation": "GREATER_EQUAL",
             "values": [0.4]
           },
           {
             "on": "ENTITY",
             "type": "LOCATION",
-            "attribute": "y",
+            "attribute": "z",
             "operation": "LESSER_EQUAL",
             "values": [1.2]
           }
