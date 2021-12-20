@@ -124,7 +124,7 @@ class Parser:
             elements = self._file.by_type(ifc_entity)
             temp |= set(elements)
 
-        self._all_elements = [{"ifc": e} for e in elements]
+        self._all_elements = [{"ifc": e} for e in temp]
         return self
 
     def exclude(self, *ifc_entities):
@@ -153,9 +153,9 @@ class Parser:
 
         for rule in self._rules:
             if self._scope == Scope.CONTAINER:
-                space_names = map(lambda x: x not in container_kw, self._containers)
+                space_names = filter(lambda x: x not in container_kw, self._containers)
                 query = " | ".join(map(lambda x: f'.IfcSpace[LongName *= "{x}"]', space_names))
-                spaces = selector.parse(self._file, query)
+                spaces = selector.parse(self._file, query) if query else []
                 ifc_elements = [e["ifc"] for e in self._all_elements]
 
                 for space in spaces:
@@ -279,14 +279,29 @@ class Parser:
 
     # Private methods
     def _keep(self, element, attribute, value):
+        if type(value) == IfcEntity:
+            value = value.id()
+
         if type(value) == list or type(value) == tuple:
             value = list(map(lambda x: x.id(), value))
         element[attribute] = value
         self._partial_elements.append(element)
 
     def _solve(self, op, arg1, arg2):
+        def equal_compare(a, b):
+            arr = []
+            for e in b:
+                if type(e) == str:
+                    arr.append(re.search(str(e), str(a)))
+                else:
+                    try:
+                        arr.append(float(a) == float(e))
+                    except:
+                        arr.append(a == b)
+            return any(arr)
+
         ops = {
-            "EQUAL": lambda a, b: any([re.search(str(e), str(a)) if type(e) == str else e == a for e in b]),
+            "EQUAL": lambda a, b: equal_compare(a, b),
             "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) if type(e) == str else e != a for e in b]),
             "GREATER": lambda a, b: any([str(a) > str(e) for e in b]),
             "LESSER": lambda a, b: any([str(a) < str(e) for e in b]),
