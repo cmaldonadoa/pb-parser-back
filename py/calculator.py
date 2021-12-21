@@ -33,7 +33,12 @@ class Operation (BinaryFunction):
         A = self.a.solve(data)
         B = self.b.solve(data)
         mB = mList(B for _ in range(len(A)))
-        return all(mList(fn(a, b) for a, b in zip(A, mB)))
+        return mList(fn(a, b) for a, b in zip(A, mB))
+
+    def solve_list_list(self, data, fn):
+        A = self.a.solve(data)
+        B = self.b.solve(data)
+        return mList(fn(a, b) for a, b in zip(A, B))
 
 
 # Leaf nodes
@@ -154,7 +159,7 @@ class Intersection(BinaryFunction):
         return f"({self.a} \\intersect {self.b})"
 
 
-class Difference(BinaryFunction):
+class SetDifference(BinaryFunction):
     def solve(self, data):
         return Set(self.a.solve(data)) - Set(self.b.solve(data))
 
@@ -170,6 +175,23 @@ class Division(Operation):
 
     def __repr__(self):
         return f"({self.a} / {self.b})"
+
+
+class Difference(Operation):
+    def solve(self, data):
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return self.solve_list_number(data, lambda x, y: x - y)
+
+        if isinstance(a, mList) and isinstance(b, mList):
+            return self.solve_list_list(data, lambda x, y: x - y)
+
+        return a - b
+
+    def __repr__(self):
+        return f"({self.a} - {self.b})"
 
 
 class Equal(BinaryFunction):
@@ -193,7 +215,7 @@ class Greater(Operation):
         a = self.a.solve(data)
         b = self.b.solve(data)
         if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-            return self.solve_list_number(data, lambda x, y: x > y)
+            return all(self.solve_list_number(data, lambda x, y: x > y))
 
         return a > b
 
@@ -207,7 +229,7 @@ class Lesser(Operation):
             a = self.a.solve(data)
             b = self.b.solve(data)
             if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-                return self.solve_list_number(data, lambda x, y: x < y)
+                return all(self.solve_list_number(data, lambda x, y: x < y))
 
             return a < b
         except TypeError:
@@ -222,7 +244,7 @@ class GreaterEq(Operation):
         a = self.a.solve(data)
         b = self.b.solve(data)
         if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-            return self.solve_list_number(data, lambda x, y: x >= y)
+            return all(self.solve_list_number(data, lambda x, y: x >= y))
 
         return a >= b
 
@@ -236,7 +258,7 @@ class LesserEq(Operation):
             a = self.a.solve(data)
             b = self.b.solve(data)
             if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-                return self.solve_list_number(data, lambda x, y: x <= y)
+                return all(self.solve_list_number(data, lambda x, y: x <= y))
 
             return a <= b
         except TypeError:
@@ -394,9 +416,20 @@ class Multiply(BinaryFunction):
         A = self.a.solve(data)
         B = self.b.solve(data)
 
-        return mList(mList(sum(a * b for a, b in zip(A_row, B_col))
-                           for B_col in zip(*B))
-                     for A_row in A)
+        if type(B) == mList:
+            if type(A) == mList:
+                if len(A) > 0 and type(A[0]) == mList:
+                    return mList(mList(sum(a * b for a, b in zip(A_row, B_col))
+                                       for B_col in zip(*B))
+                                 for A_row in A)
+                else:
+                    return mList(sum(a * b for a, b in zip(A, B_row))
+                                 for B_row in B)
+
+            else:
+                return mList(sum(A * b for b in B_col) for B_col in zip(*B))
+        else:
+            return A * B
 
     def __repr__(self):
         return f"({self.a} \\cdot {self.b})"
@@ -422,7 +455,10 @@ class Sumatory(UnaryFunction):
 class Distance(UnaryFunction):
     def solve(self, data):
         try:
-            return self.a.solve(data).meta["distance"]
+            if type(self.a) != NamedSet:
+                raise "Type mismatch"
+
+            return data["meta"][self.a.p]["distance"]
         except:
             return float("inf")
 
@@ -658,6 +694,7 @@ class Calculator:
             [" >= ", GreaterEq],
             [" < ", Lesser],
             [" <= ", LesserEq],
+            [" \\ ", SetDifference],
             [" - ", Difference],
             [" / ", Division],
             [" | ", Union],
