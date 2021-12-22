@@ -847,7 +847,7 @@ module.exports = {
           "[name] = ?, [commune_id] = ?, [address] = ?, [property_role] = ?, [constructability_coef] = ?, " +
           "[soil_occupancy_coef] = ?, [building_type_id] = ?, [angle] = ?, [vulnerable] = ?, [handicap_vulnerable] = ?, " +
           "[medios_1] = ?, [handicap_medios_1] = ?, [medios_2] = ?, [handicap_medios_2] = ?, [total] = ?, " +
-          "[upper_floors_coef] = ?, [total_units] = ?, [parking_lots] = ?, [building_height] = ?" +
+          "[upper_floors_coef] = ?, [total_units] = ?, [parking_lots] = ?, [building_height] = ? " +
           "WHERE [tender_id] = ?",
         [
           data.name,
