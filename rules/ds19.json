@@ -505,6 +505,7 @@
     "name": "Estar-Comedor-Cocina: mueble de cocina 1",
     "description": "Cocina considera mueble de melamina de mínimo 80 x 50cm, con dos puertas abatibles, donde se monta la cubierta del lavaplatos.",
     "formula": "count(#p0) > 0",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -540,6 +541,13 @@
             "attribute": "NominalDepth",
             "operation": "GREATER_EQUAL",
             "values": [0.5]
+          },
+          {
+            "on": "ENTITY",
+            "type": "PSET_QTO",
+            "pset": "Pset_FurnitureTypeCommon",
+            "attribute": "IsBuiltIn",
+            "operation": "NOT_EXISTS"
           }
         ]
       }
@@ -549,6 +557,7 @@
     "name": "Estar-Comedor-Cocina: mueble de cocina 2",
     "description": "Cocina considera mueble de melamina de mínimo 80 x 50cm con dos puertas abatibles, que se monta en el muro.",
     "formula": "count(#p0) > 0",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -601,6 +610,7 @@
     "name": "Dormitorio principal: closet",
     "description": "Considera al menos dos módulos de closet, con divisiones laterales y horizontales.",
     "formula": "count(#p0) >= 2",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -698,6 +708,7 @@
     "name": "Segundo dormitorio: closet",
     "description": "Considera al menos dos módulos de closet, con divisiones laterales y horizontales",
     "formula": "(count(#p0) > 0) then (count(#p1) >= 2)",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -829,6 +840,7 @@
     "name": "Tercer dormitorio: closet",
     "description": "Considera al menos 1 módulo de closet, con divisiones laterales y horizontales.",
     "formula": "(count(#p0) > 0) then (count(#p1) > 0)",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1119,7 +1131,7 @@
   {
     "name": "Baños: lavadora",
     "description": "Cuenta con conexión red fria y caliente y evacuación de aguas servidas para la lavadora, en caso de que se consulte en baño.",
-    "formula": "(count(#p0) > 0) then ((count(#p1) > 0) and (count(#p2) > 0))",
+    "formula": "(count(#p0) > 0) then ((count(#p1) > 0) and (count(#p2) > 0) and (count(#p3) > 0))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1230,6 +1242,7 @@
     "name": "Baños: grifería",
     "description": "Grifería del baño considera mecanismo de presión, palanca o fácil maniobra y aireados.",
     "formula": "count(#p0) > 0",
+    "display": "#p0[Description]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1557,7 +1570,7 @@
   {
     "name": "Escaleras: pasamanos",
     "description": "En escaleras interiores se debe considerar pasamanos, con desarrollo a lo largo de toda la escalera.",
-    "formula": "((count(#p2) > 0) and (count(#p3) > 0)) then ((count(#p0) > 0) and (count(#p1) > 0) and ((#p0[Length] x #p1[Length]) as (#p0[Name] x #p1[Name])))",
+    "formula": "((count(#p2) > 0) and (count(#p3) > 0)) then ((count(#p0) > 0) and (count(#p1) > 0) and ((#p0[Length] x #p1[Length]) = (#p0[Name] x #p1[Name])))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1688,7 +1701,7 @@
             "type": "PSET_QTO",
             "pset": "Qto_SpaceBaseQuantities",
             "attribute": "Height",
-            "operation": "EQUAL",
+            "operation": "GREATER_EQUAL",
             "values": [1.6]
           }
         ]
@@ -1881,7 +1894,7 @@
   {
     "name": "Puertas: cantidad (departamentos)",
     "description": "Se considera una puerta exterior y una puerta de salida a logia que contempla ventana y ventilación. Puede ser solución puerta – ventana.  ",
-    "formula": "(count(#p0) >= 1) and (count(#p1 & #p2) > 0)",
+    "formula": "(count(#p0) >= 1) and (count(#p1 & #p2) > 0) and (count(#p3 & #p4) > 0)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -1923,7 +1936,21 @@
         ]
       },
       {
-        "spaces": [],
+        "spaces": ["COCINA"],
+        "entities": ["IfcWindow"],
+        "constraints": [
+          {
+            "on": "TYPE",
+            "type": "PSET_QTO",
+            "pset": "IfcWindowPanelProperties",
+            "attribute": "OperationType",
+            "operation": "NOT_EQUAL",
+            "values": ["FixedCasement", "RemovableCasement"]
+          }
+        ]
+      },
+      {
+        "spaces": ["LOGIA"],
         "entities": ["IfcWindow"],
         "constraints": [
           {
@@ -2017,7 +2044,7 @@
   {
     "name": "Calefón: capacidad",
     "description": "Artefacto calefón con capacidad mínima de 7 litros.",
-    "formula": "(count(#p0) > 0) and (#p0[WaterStorageCapacity] >= 7)",
+    "formula": "(count(#p0) = count(#p1)) and (#p0[WaterStorageCapacity] >= 7)",
     "display": "#p0[WaterStorageCapacity]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -2030,6 +2057,18 @@
             "type": "PSET_QTO",
             "pset": "Pset_BoilerTypeCommon",
             "attribute": "WaterStorageCapacity",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": [],
+        "entities": ["IfcBoiler"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
             "operation": "EXISTS"
           }
         ]
@@ -2358,7 +2397,7 @@
             "pset": "Pset_ElectricalDeviceCommon",
             "attribute": "Sensitivity",
             "operation": "EQUAL",
-            "values": [3]
+            "values": [0.03]
           }
         ]
       }
@@ -2690,7 +2729,7 @@
   {
     "name": "Accesibilidad universal: enchufes",
     "description": "La altura de los enchufes no debe estar a menos de 40cm y a más de 1.2m del piso.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2729,7 +2768,7 @@
   },
   {
     "name": "Accesibilidad universal: interruptores",
-    "description": "La altura de los interuptores no debe estar a menos de 40cm y a más de 1.2m del piso.",
+    "description": "La altura de los interruptores no debe estar a menos de 40cm y a más de 1.2m del piso.",
     "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [

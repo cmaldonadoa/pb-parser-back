@@ -423,7 +423,7 @@
   },
   {
     "name": "Proyecto Específico",
-    "description": "",
+    "description": "El proyecto considera la cantidad de viviendas de cada tipo según la entremezcla.",
     "formula": "(count(#p0) >= $VULNERABLE) and (count(#p1) >= $MEDIOS_1) and (count(#p2) >= $MEDIOS_2)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
