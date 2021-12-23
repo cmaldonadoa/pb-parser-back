@@ -119,9 +119,7 @@ module.exports = {
           tender.upper_floors_coef === null ? -1 : tender.upper_floors_coef,
         UNIDADES_TOTALES: tender.total_units === null ? -1 : tender.total_units,
         ESTACIONAMIENTOS:
-          tender.parking_lots === null
-            ? Number.MAX_SAFE_INTEGER
-            : tender.parking_lots,
+          tender.parking_lots === null ? -1 : tender.parking_lots,
         ALTURA: tender.building_height === null ? -1 : tender.building_height,
       };
 
