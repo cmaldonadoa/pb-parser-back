@@ -23,7 +23,7 @@ module.exports = {
         res.status(400).end();
       }
     } catch (error) {
-      logger.error(error);
+      logger.handleError(error);
       res.status(400).end();
       return;
     }
@@ -37,7 +37,7 @@ module.exports = {
       await model.storeUser({ username, hash, regionId, roleId });
       res.status(200).end();
     } catch (error) {
-      logger.error(error);
+      logger.handleError(error);
       res.status(400).end();
       return;
     }
@@ -59,7 +59,7 @@ module.exports = {
       req.userId = id;
       next();
     } catch (error) {
-      logger.error(error);
+      logger.handleError(error);
       res.status(400).end();
       return;
     }
@@ -80,7 +80,7 @@ module.exports = {
       req.userId = id;
       next();
     } catch (error) {
-      logger.error(error);
+      logger.handleError(error);
       res.status(400).end();
       return;
     }
