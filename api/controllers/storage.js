@@ -51,20 +51,20 @@ module.exports = {
         );
       }
       res.status(200).json({ status: 200, id: id });
-    });
+    }, res);
   },
   fetchFiles: async (req, res) => {
     tcWrapper(async () => {
       const data = await model.getFiles(req.userId);
       res.status(200).json({ status: 200, files: data });
-    });
+    }, res);
   },
 
   fetchFilesUser: async (req, res) => {
     tcWrapper(async () => {
       const data = await model.getFilesUser(req.userId);
       res.status(200).json({ status: 200, files: data });
-    });
+    }, res);
   },
 
   removeFile: async (req, res) => {
@@ -73,6 +73,6 @@ module.exports = {
       const path = `${__dirname}/../../files`;
       exec(`rm -rf ${path}/${req.params.file}`);
       res.status(200).json({ status: 200 });
-    });
+    }, res);
   },
 };

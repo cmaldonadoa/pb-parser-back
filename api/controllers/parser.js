@@ -94,7 +94,7 @@ module.exports = {
         }
       }
       res.status(200).json({ stauts: 200 });
-    });
+    }, res);
   },
 
   check: async (req, res) => {
@@ -177,7 +177,7 @@ module.exports = {
       }
 
       res.status(200).json({ status: 200 });
-    });
+    }, res);
   },
 
   getResults: async (req, res) => {
@@ -238,7 +238,7 @@ module.exports = {
         status: 200,
         results: data,
       });
-    });
+    }, res);
   },
 
   getResultsPdf: async (req, res) => {
@@ -314,6 +314,6 @@ module.exports = {
             .status(200)
             .download(`${__dirname}/../../files/${fileId}/results.pdf`)
       );
-    });
+    }, res);
   },
 };
