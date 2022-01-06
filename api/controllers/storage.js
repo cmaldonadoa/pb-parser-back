@@ -1,8 +1,8 @@
 var exec = require("child_process").execSync;
 const model = require("../models/storage.js");
-const logger = require("../utils/logger");
+const utils = require("../utils");
 
-const { tcWrapper } = logger;
+const { tcWrapper } = utils;
 
 module.exports = {
   upload: async (req, res) => {

@@ -4,9 +4,9 @@ const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
 const authentication = require("../models/authentication.js");
 const pdf = require("../utils/pdf/pdf.js");
-const logger = require("../utils/logger");
+const utils = require("../utils");
 
-const { tcWrapper } = logger;
+const { tcWrapper } = utils;
 
 module.exports = {
   parse: async (req, res) => {
