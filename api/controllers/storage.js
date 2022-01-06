@@ -2,6 +2,8 @@ var exec = require("child_process").execSync;
 const model = require("../models/storage.js");
 const logger = require("../utils/logger");
 
+const { tcWrapper } = logger;
+
 module.exports = {
   upload: async (req, res) => {
     const file = req.files ? req.files.file : null;
@@ -36,7 +38,7 @@ module.exports = {
     const nameRegexp =
       /^\w{2,6}-\w{3,6}-\w{3,6}-\w{1,2}-(ZZ|XX|\d{2}|(E|S)\d)-\w{2}(-\d{4})?(-\w*)?(-[TCPA]{1,3})(-[a-zA-Z]{1,2})?$/;
 
-    try {
+    tcWrapper(async () => {
       const id = await model.saveFile(req.userId, {
         name: filename,
         type,
@@ -49,40 +51,28 @@ module.exports = {
         );
       }
       res.status(200).json({ status: 200, id: id });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    });
   },
   fetchFiles: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getFiles(req.userId);
       res.status(200).json({ status: 200, files: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    });
   },
 
   fetchFilesUser: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getFilesUser(req.userId);
       res.status(200).json({ status: 200, files: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    });
   },
 
   removeFile: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       await model.deleteFile(req.params.file);
       const path = `${__dirname}/../../files`;
       exec(`rm -rf ${path}/${req.params.file}`);
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    });
   },
 };
