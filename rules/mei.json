@@ -44,7 +44,7 @@
   {
     "name": "Niveles del proyecto y su denominación",
     "description": "Todos los niveles de un proyecto están clasificados numéricamente y con una descripción textual.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -97,7 +97,7 @@
   {
     "name": "Estructura y denominación",
     "description": "Los objetos tienen correctamente asociado su tipo.",
-    "formula": "#p0 \\ (#p1 | #p2 | #p3) = empty",
+    "formula": "(count(#p0) > 0) and (#p0 \\ (#p1 | #p2 | #p3) = empty)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -165,7 +165,7 @@
   {
     "name": "Sistema de Clasificación",
     "description": "Todos los objetos cuentan con un sistema de clasificación asociado.",
-    "formula": "#p0 <= #p1[RelatedObjects]",
+    "formula": "(count(#p0) > 0) and (#p0 <= #p1[RelatedObjects])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -198,7 +198,7 @@
   {
     "name": "Indique el material correcto de los objetos",
     "description": "Los objetos cuentan con una descripción del material correspondiente.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -233,7 +233,7 @@
   {
     "name": "Elementos de carga",
     "description": "Los elementos que correspondan poseen la propiedad LoadBearing bien definida.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -290,7 +290,7 @@
   {
     "name": "Elementos exteriores",
     "description": "Los elementos que correspondan poseen la propiedad IsExternal bien definida.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -363,7 +363,7 @@
   {
     "name": "Resistencia al fuego",
     "description": "Los elementos que correspondan poseen la propiedad FireRating bien definida.",
-    "formula": "#p0 = #p1",
+    "formula": "(count(#p1) > 0) and (#p0 = #p1)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
