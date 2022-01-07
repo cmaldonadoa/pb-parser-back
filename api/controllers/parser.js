@@ -4,7 +4,9 @@ const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
 const authentication = require("../models/authentication.js");
 const pdf = require("../utils/pdf/pdf.js");
-const logger = require("../utils/logger");
+const utils = require("../utils");
+
+const { tcWrapper } = utils;
 
 module.exports = {
   parse: async (req, res) => {
@@ -13,7 +15,7 @@ module.exports = {
     const groupIds = req.body.group_ids.split(",");
     const path = `${__dirname}/../../files/${fileId}`;
 
-    try {
+    tcWrapper(async () => {
       // Parse rules
       const { file, type } = await storage.getFileWithType({ fileId: fileId });
       const tender = await manager.getTender(tenderId);
@@ -92,10 +94,7 @@ module.exports = {
         }
       }
       res.status(200).json({ stauts: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   check: async (req, res) => {
@@ -103,7 +102,7 @@ module.exports = {
     const tenderId = parseInt(req.body.tender_id);
     const groupIds = req.body.group_ids.split(",");
 
-    try {
+    tcWrapper(async () => {
       const { type } = await storage.getFileWithType({ fileId: fileId });
 
       const tender = await manager.getTender(tenderId);
@@ -119,9 +118,7 @@ module.exports = {
           tender.upper_floors_coef === null ? -1 : tender.upper_floors_coef,
         UNIDADES_TOTALES: tender.total_units === null ? -1 : tender.total_units,
         ESTACIONAMIENTOS:
-          tender.parking_lots === null
-            ? Number.MAX_SAFE_INTEGER
-            : tender.parking_lots,
+          tender.parking_lots === null ? -1 : tender.parking_lots,
         ALTURA: tender.building_height === null ? -1 : tender.building_height,
       };
 
@@ -180,15 +177,12 @@ module.exports = {
       }
 
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   getResults: async (req, res) => {
     const fileId = parseInt(req.params.file);
-    try {
+    tcWrapper(async () => {
       const { results } = await parser.getResults(fileId);
       const data = results.reduce((rv, x) => {
         (rv[x["group"]] = rv[x["group"]] || []).push(x);
@@ -244,16 +238,13 @@ module.exports = {
         status: 200,
         results: data,
       });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   getResultsPdf: async (req, res) => {
     const fileId = parseInt(req.params.file);
     const userId = parseInt(req.userId);
-    try {
+    tcWrapper(async () => {
       const { file, type } = await storage.getFileWithType({ fileId });
       const username = await authentication.getUsername({ userId });
       const { results, tenderId } = await parser.getResults(fileId);
@@ -323,9 +314,6 @@ module.exports = {
             .status(200)
             .download(`${__dirname}/../../files/${fileId}/results.pdf`)
       );
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 };

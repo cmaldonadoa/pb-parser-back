@@ -1,6 +1,7 @@
 [
   {
     "name": "Superficie de subdivisión predial mínima",
+    "description": "La superficie de subdivisión predial del terreno está bien definida.",
     "formula": "count(#p0) > 0",
     "display": "#p0[GrossArea]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -22,6 +23,7 @@
   },
   {
     "name": "Uso de Suelo",
+    "description": "El uso de suelo del terreno está bien definido.",
     "formula": "count(#p0) > 0",
     "display": "#p0[Restrictions]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -43,6 +45,7 @@
   },
   {
     "name": "Destino contemplado",
+    "description": "El destino de la edificación está bien definido.",
     "formula": "count(#p0) > 0",
     "display": "#p0[MarketCategory]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -64,6 +67,7 @@
   },
   {
     "name": "Sistema de agrupamiento",
+    "description": "El sistema de agrupamiento de la edificación está bien definido.",
     "formula": "count(#p0) > 0",
     "display": "#p0[OccupancyType]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -85,6 +89,7 @@
   },
   {
     "name": "Coeficiente de constructibilidad",
+    "description": "El coeficiente de constructibilidad del proyecto no supera el máximo permitido en el llamado.",
     "formula": "(count(#p0) > 0) and (count(#p1) > 0) and ((sum(#p0[GrossFloorArea]) / sum(#p1[GrossArea])) <= $CONSTRUCTIBILIDAD)",
     "display": "sum(#p0[GrossFloorArea]) / sum(#p1[GrossArea])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -119,6 +124,7 @@
   },
   {
     "name": "Coeficiente de ocupación de suelo",
+    "description": "El coeficiente de ocupación de suelo del proyecto no supera el máximo permitido en el llamado.",
     "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (count(#p2) > 0) and (((sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea])) <= $SUELO)",
     "display": "sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -178,6 +184,7 @@
   },
   {
     "name": "Coeficiente de ocupación de pisos superiores",
+    "description": "El coeficiente de ocupación de pisos superiores del proyecto no supera el máximo permitido en el llamado.",
     "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (count(#p2) > 0) and ((sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea]) <= $PISOS_SUPERIORES)",
     "display": "sum(map(#p0[GrossFloorArea], (#p0[Decomposes] in #p2[IsDecomposedBy]))) / sum(#p1[GrossArea])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -237,7 +244,8 @@
   },
   {
     "name": "Exigencias de estacionamiento",
-    "formula": "count(#p0) <= $ESTACIONAMIENTOS",
+    "description": "El proyecto considera por lo menos la cantidad de estacionamientos definida en el llamado.",
+    "formula": "count(#p0) >= $ESTACIONAMIENTOS",
     "display": "count(#p0)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
@@ -258,6 +266,7 @@
   },
   {
     "name": "Número de propiedad",
+    "description": "El número de la propiedad está bien definido.",
     "formula": "count(#p0) > 0",
     "display": "#p0[LandID]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -279,6 +288,7 @@
   },
   {
     "name": "Rol de la propiedad",
+    "description": "El rol de la propiedad coincide con el del llamado.",
     "formula": "(count(#p0) > 0) and (#p0[LandTitleID] = $ROL)",
     "display": "#p0[LandTitleID]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -300,9 +310,10 @@
   },
   {
     "name": "Unidades totales",
-    "formula": "count(#p0) <= $UNIDADES_TOTALES",
+    "description": "El proyecto considera la cantidad de unidades de vivienda según el llamado.",
+    "formula": "count(#p0) = $UNIDADES_TOTALES",
     "display": "count(#p0)",
-    "buildingTypes": ["HOUSE", "APARTMENT"],
+    "buildingTypes": ["APARTMENT"],
     "filters": [
       {
         "spaces": [],
@@ -320,6 +331,7 @@
   },
   {
     "name": "Calidad de edificio histórico",
+    "description": "La calidad de edificio histórico está bien definida.",
     "formula": "count(#p0) > 0",
     "display": "#p0[IsLandmarked]",
     "buildingTypes": ["HOUSE", "APARTMENT"],
@@ -342,6 +354,7 @@
   {
     "name": "Altura máxima de edificación",
     "formula": "(count(#p0) > 0) and (max(#p0[h]) <= $ALTURA)",
+    "description": "La altura de la edificación no supera la altura máxima permitida.",
     "display": "max(#p0[h])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [

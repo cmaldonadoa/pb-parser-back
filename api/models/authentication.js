@@ -1,4 +1,4 @@
-const SqlManager = require("./sqlmanager");
+const SqlManager = require("../utils/sqlmanager");
 
 const db = new SqlManager();
 

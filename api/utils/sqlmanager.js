@@ -10,6 +10,9 @@ class SqlManager {
         host: process.env.DB_HOST,
         dialect: process.env.DB_DIALECT,
         port: process.env.DB_PORT,
+        pool: {
+          max: 10,
+        },
       }
     );
     this._transaction = null;

@@ -1,4 +1,4 @@
-const SqlManager = require("./sqlmanager");
+const SqlManager = require("../utils/sqlmanager");
 
 const db = new SqlManager();
 
@@ -366,6 +366,12 @@ class Manager {
           [ruleId]
         );
       },
+      deleteFilters: async (ruleId) => {
+        await this.sqlManager.delete(
+          "DELETE FROM [ifc_bim].[filter] WHERE [rule_id] = ?",
+          [ruleId]
+        );
+      },
     };
   }
 }
@@ -590,20 +596,13 @@ module.exports = {
       await manager.deleter.unlinkRuleBuildingTypes(ruleId);
       await manager.creator.linkRuleBuildingTypes(ruleId, data.buildingTypes);
 
+      await manager.deleter.deleteFilters(ruleId);
       for await (const filter of data.filters) {
-        let filterId = filter.id;
-        if (!!filterId) {
-          await manager.updater.updateFilter(ruleId, filterId, filter.index);
-          await manager.deleter.unlinkFilterEntitiesExcluded(filterId);
-          await manager.deleter.unlinkFilterEntities(filterId);
-          await manager.deleter.unlinkFilterSpaces(filterId);
-        } else {
-          filterId = await manager.creator.newFilter(
-            ruleId,
-            filter.index,
-            filter.name
-          );
-        }
+        const filterId = await manager.creator.newFilter(
+          ruleId,
+          filter.index,
+          filter.name
+        );
 
         await manager.creator.linkFilterSpaces(filterId, filter.spaces);
         await manager.creator.linkFilterEntities(filterId, filter.entities);
@@ -617,28 +616,14 @@ module.exports = {
             constraint.operation
           );
           const onId = await manager.getter.getOn(constraint.on);
-          let constraintId = constraint.id;
 
-          if (!!constraintId) {
-            await manager.updater.updateConstraint(
-              constraintId,
-              operationId,
-              onId,
-              constraint.attribute,
-              constraint.index
-            );
-
-            await manager.deleter.deleteSpecificConstraint(constraintId);
-            await manager.deleter.deleteExpectedValues(constraintId);
-          } else {
-            constraintId = await manager.creator.newConstraint(
-              operationId,
-              onId,
-              filterId,
-              constraint.attribute,
-              constraint.index
-            );
-          }
+          const constraintId = await manager.creator.newConstraint(
+            operationId,
+            onId,
+            filterId,
+            constraint.attribute,
+            constraint.index
+          );
 
           await manager.creator.newSpecificConstraint(constraintId, constraint);
           await manager.creator.newExpectedValues(

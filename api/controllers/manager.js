@@ -1,76 +1,60 @@
 var exec = require("child_process").execSync;
 const model = require("../models/manager.js");
-const logger = require("../utils/logger");
+const utils = require("../utils");
+
+const { tcWrapper } = utils;
 
 module.exports = {
   createRule: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const ruleId = await model.createRule(req.userId, req.body);
       res.status(200).json({ status: 200, ruleId });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   updateRule: async (req, res) => {
     const ruleId = parseInt(req.params.rule);
-    try {
+    tcWrapper(async () => {
       await model.updateRule(ruleId, req.body);
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchRules: async (req, res) => {
     const groupId = parseInt(req.params.group);
-    try {
+    tcWrapper(async () => {
       const data = await model.getRulesByGroupHeader(parseInt(groupId));
       res.status(200).json({ status: 200, rules: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchRule: async (req, res) => {
     const ruleId = parseInt(req.params.rule);
-    try {
+    tcWrapper(async () => {
       const data = await model.getRuleFull(parseInt(ruleId));
       res.status(200).json({ status: 200, rule: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   deleteRule: async (req, res) => {
     const ruleId = parseInt(req.params.rule);
-    try {
+    tcWrapper(async () => {
       await model.deleteRule(ruleId);
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   parseFormula: async (req, res) => {
     const formula = req.body.formula;
 
-    try {
+    tcWrapper(async () => {
       const buffer = exec(
         `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`
       );
       res.status(200).json({ status: 200, latex: buffer.toString() });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   createRuleMultiple: async (req, res) => {
     const rules = req.body;
     const groupId = parseInt(req.params.group);
 
-    try {
+    tcWrapper(async () => {
       for await (const rule of rules) {
         rule.group = groupId;
         rule.modelTypes = ["ARQUITECTURA", "VOLUMETRICO", "SITIO"];
@@ -91,127 +75,88 @@ module.exports = {
         await model.createRule(req.userId, rule);
       }
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchGroups: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getGroups();
       res.status(200).json({ status: 200, groups: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   fetchRegions: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getRegions();
       res.status(200).json({ status: 200, regions: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchCommunes: async (req, res) => {
     const regionId = parseInt(req.params.region);
 
-    try {
+    tcWrapper(async () => {
       const data = await model.getCommunes(regionId);
       res.status(200).json({ status: 200, communes: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   createTender: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const tenderId = await model.createTender(req.userId, req.body);
       res.status(200).json({ status: 200, tenderId });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   fetchTenders: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getTenders(req.userId);
       res.status(200).json({ status: 200, tenders: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchTender: async (req, res) => {
     const tenderId = parseInt(req.params.tender);
-    try {
+    tcWrapper(async () => {
       const data = await model.getTender(tenderId);
       res.status(200).json({ status: 200, tender: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchUserTenders: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getTendersUser(req.userId);
       res.status(200).json({ status: 200, tenders: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   fetchUserRules: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getRulesUser(req.userId);
       res.status(200).json({ status: 200, rules: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   deleteTender: async (req, res) => {
     const tenderId = parseInt(req.params.tender);
-    try {
+    tcWrapper(async () => {
       await model.removeTender(tenderId);
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   updateTender: async (req, res) => {
     const tenderId = parseInt(req.params.tender);
 
-    try {
+    tcWrapper(async () => {
       await model.updateTender(tenderId, req.body);
       res.status(200).json({ status: 200 });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
   createGroup: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const id = await model.createGroup(req.body.name);
       res.status(200).json({ status: 200, group: id });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 
   fetchEntities: async (req, res) => {
-    try {
+    tcWrapper(async () => {
       const data = await model.getEntities();
       res.status(200).json({ status: 200, entities: data });
-    } catch (error) {
-      logger.error(error);
-      res.status(500).json({ status: 500 });
-    }
+    }, res);
   },
 };
