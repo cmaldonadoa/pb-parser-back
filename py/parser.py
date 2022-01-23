@@ -300,13 +300,34 @@ class Parser:
                         arr.append(a == b)
             return any(arr)
 
+        def notequal_compare(a, b):
+            arr = []
+            for e in b:
+                if type(e) == str:
+                    arr.append(not re.search(str(e), str(a)))
+                else:
+                    try:
+                        arr.append(float(a) != float(e))
+                    except:
+                        arr.append(a != b)
+            return any(arr)
+
+        def wildcard_compare(a, b, fn):
+            arr = []
+            for e in b:
+                try:
+                    arr.append(fn(float(a), float(e)))
+                except:
+                    arr.append(fn(a, b))
+            return any(arr)
+
         ops = {
             "EQUAL": lambda a, b: equal_compare(a, b),
-            "NOT_EQUAL": lambda a, b: any([not re.search(str(e), str(a)) if type(e) == str else e != a for e in b]),
-            "GREATER": lambda a, b: any([str(a) > str(e) for e in b]),
-            "LESSER": lambda a, b: any([str(a) < str(e) for e in b]),
-            "GREATER_EQUAL": lambda a, b: any([str(a) >= str(e) for e in b]),
-            "LESSER_EQUAL": lambda a, b: any([str(a) <= str(e) for e in b]),
+            "NOT_EQUAL": lambda a, b: notequal_compare(a, b),
+            "GREATER": lambda a, b: wildcard_compare(a, b, lambda x, y: x > y),
+            "LESSER": lambda a, b: wildcard_compare(a, b, lambda x, y: x < y),
+            "GREATER_EQUAL": lambda a, b: wildcard_compare(a, b, lambda x, y: x >= y),
+            "LESSER_EQUAL": lambda a, b: wildcard_compare(a, b, lambda x, y: x <= y),
             "EXISTS": lambda a: bool(str(a)),
             "NOT_EXISTS": lambda a: not bool(str(a)),
         }
@@ -360,26 +381,36 @@ class Parser:
         for pset_name in psets:
             if re.search(pset, pset_name):
                 attributes = psets[pset_name]
-                if attribute in attributes:
-                    this_value = attributes[attribute]
+                attributes_names = dict()
+                for name in attributes:
+                    attributes_names[name.strip()] = name
+                if attribute in attributes_names:
+                    this_value = attributes[attributes_names[attribute]]
                     this_value = str(this_value) if type(
                         this_value) is bool else this_value
                     if self._solve(op, this_value, value):
                         self._keep(element, str(id), this_value)
+                elif op == "NOT_EXISTS":
+                    self._keep(element, str(id), None)
                 break
 
     def _search_pset_type(self, id, ifc_element, element, pset, attribute,
                           value, op):
-        psets = ifc_element.HasPropertySets
-        for pset_type in psets:
-            pset_name = pset_type.is_a()
+        psets = IOSElement.get_psets(ifc_element)
+        for pset_name in psets:
             if re.search(pset, pset_name):
-                attribute = getattr(pset_type, attribute, None)
-                if attribute:
-                    this_value = str(attribute) if type(
-                        attribute) is bool else attribute
+                attributes = psets[pset_name]
+                attributes_names = dict()
+                for name in attributes:
+                    attributes_names[name.strip()] = name
+                if attribute in attributes_names:
+                    this_value = attributes[attributes_names[attribute]]
+                    this_value = str(this_value) if type(
+                        this_value) is bool else this_value
                     if self._solve(op, this_value, value):
                         self._keep(element, str(id), this_value)
+                elif op == "NOT_EXISTS":
+                    self._keep(element, str(id), None)
                 break
 
     def _error(self):

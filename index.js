@@ -36,6 +36,8 @@ app.all("*", function (req, res) {
 
 // Start
 var server = app.listen(app.get("port"), () => {
-  console.log(`[${new Date().toISOString()}] Connected on ${app.get("port")}`);
+  console.log(
+    `[${new Date().toLocaleString()}] Connected on ${app.get("port")}`
+  );
 });
 server.timeout = 20 * 60 * 1000;

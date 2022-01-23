@@ -754,7 +754,7 @@
             "type": "PSET_QTO",
             "pset": "Pset_OutletTypeCommon",
             "attribute": "NumberOfSockets",
-            "operation": "GREATER_EQUAL",
+            "operation": "EQUAL",
             "values": [2]
           }
         ]
@@ -778,7 +778,7 @@
   {
     "name": "Segundo dormitorio: ventana",
     "description": "Cuenta con al menos una ventana con hoja practicable",
-    "formula": "count(#p1) > 0",
+    "formula": "count(#p0) > 0",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -835,7 +835,7 @@
   {
     "name": "Tercer dormitorio: enchufes",
     "description": "Cuenta con 1 enchufe doble.",
-    "formula": "count(#p1) > 0",
+    "formula": "count(#p0) > 0",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -857,7 +857,7 @@
   {
     "name": "Tercer dormitorio: ventana",
     "description": "Ventana con al menos una hoja practicable.",
-    "formula": "count(#p1) > 0",
+    "formula": "count(#p0) > 0",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1455,7 +1455,7 @@
   {
     "name": "Escaleras: pasamanos",
     "description": "En escaleras interiores se debe considerar pasamanos, con desarrollo a lo largo de toda la escalera.",
-    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and ((#p0[Length] x #p1[Length]) = (#p0[Name] x #p1[Name]))",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (sum(#p0[Name] x #p1[Name]) > 0) and ((#p0[Length] x #p1[Length]) = (#p0[Name] x #p1[Name]))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1484,7 +1484,7 @@
           {
             "on": "ENTITY",
             "type": "PSET_QTO",
-            "pset": "Qto_RaliningBaseQuantities",
+            "pset": "Qto_RailingBaseQuantities",
             "attribute": "Length",
             "operation": "EXISTS"
           },
@@ -2165,7 +2165,6 @@
     "name": "Terminaciones: iluminación exterior",
     "description": "En casas, existe un centro de iluminación sobre la puerta de acceso.",
     "formula": "(count(#p0) = 1) and (count(#p1) = 1) and (count(#p2) = 1) and (dist(#p3) <= 0.3)",
-    "display": "dist(#p3)",
     "buildingTypes": ["HOUSE"],
     "filters": [
       {
@@ -2300,15 +2299,16 @@
     "buildingTypes": ["HOUSE"],
     "filters": [
       {
-        "spaces": ["#LAST_STOREY"],
-        "entities": ["IfcCovering"],
+        "spaces": [],
+        "entities": ["IfcRoof"],
         "constraints": [
           {
             "on": "ENTITY",
-            "type": "ATTRIBUTE",
-            "attribute": "PredefinedType",
+            "type": "PSET_QTO",
+            "pset": "Pset_RoofCommon",
+            "attribute": "Material",
             "operation": "EQUAL",
-            "values": ["INSULATION"]
+            "values": ["Aislante Termico"]
           }
         ]
       }
@@ -2409,13 +2409,13 @@
   {
     "name": "Accesibilidad universal: acceso despejado",
     "description": "Se evitan obstáculos o barreras arquitectónicas en el acceso a cada departamento.",
-    "formula": "(count(#p2) > 0) and (count(#p0) = 0) and (count(#p1) <= 1)",
+    "formula": "(count(#p0) = 0) and (count(#p1) <= 1) and (count(#p2) <= 1) and (count(#p3) <= 1) and (count(#p4) > 0)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
         "spaces": ["ACCESO_PRINCIPAL"],
         "entities": ["IfcBuildingElement"],
-        "excluded": ["IfcDoor"],
+        "excluded": ["IfcDoor", "IfcWall", "IfcSlab"],
         "constraints": [
           {
             "on": "ENTITY",
@@ -2428,6 +2428,30 @@
       {
         "spaces": ["ACCESO_PRINCIPAL"],
         "entities": ["IfcDoor"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": ["ACCESO_PRINCIPAL"],
+        "entities": ["IfcWall"],
+        "constraints": [
+          {
+            "on": "ENTITY",
+            "type": "ATTRIBUTE",
+            "attribute": "GlobalId",
+            "operation": "EXISTS"
+          }
+        ]
+      },
+      {
+        "spaces": ["ACCESO_PRINCIPAL"],
+        "entities": ["IfcSlab"],
         "constraints": [
           {
             "on": "ENTITY",
@@ -2615,14 +2639,14 @@
             "type": "LOCATION",
             "attribute": "z",
             "operation": "GREATER_EQUAL",
-            "values": [0.4]
+            "values": [400]
           },
           {
             "on": "ENTITY",
             "type": "LOCATION",
             "attribute": "z",
             "operation": "LESSER_EQUAL",
-            "values": [1.2]
+            "values": [1200]
           }
         ]
       },
@@ -2662,14 +2686,14 @@
             "type": "LOCATION",
             "attribute": "z",
             "operation": "GREATER_EQUAL",
-            "values": [0.4]
+            "values": [400]
           },
           {
             "on": "ENTITY",
             "type": "LOCATION",
             "attribute": "z",
             "operation": "LESSER_EQUAL",
-            "values": [1.2]
+            "values": [1200]
           }
         ]
       },

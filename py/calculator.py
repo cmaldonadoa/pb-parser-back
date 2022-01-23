@@ -194,17 +194,27 @@ class Difference(Operation):
         return f"({self.a} - {self.b})"
 
 
-class Equal(BinaryFunction):
+class Equal(Operation):
     def solve(self, data):
-        return self.a.solve(data) == self.b.solve(data)
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return all(self.solve_list_number(data, lambda x, y: x == y))
+
+        return a == b
 
     def __repr__(self):
         return f"{self.a} = {self.b}"
 
 
-class NotEqual(BinaryFunction):
+class NotEqual(Operation):
     def solve(self, data):
-        return self.a.solve(data) != self.b.solve(data)
+        a = self.a.solve(data)
+        b = self.b.solve(data)
+        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+            return all(self.solve_list_number(data, lambda x, y: x != y))
+
+        return a != b
 
     def __repr__(self):
         return f"{self.a} \\neq {self.b}"
@@ -214,10 +224,12 @@ class Greater(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
-        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-            return all(self.solve_list_number(data, lambda x, y: x > y))
-
-        return a > b
+        try:
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return all(self.solve_list_number(data, lambda x, y: x > y))
+            return a > b
+        except TypeError:
+            return Set(a) > Set(b)
 
     def __repr__(self):
         return f"{self.a} > {self.b}"
@@ -225,15 +237,14 @@ class Greater(Operation):
 
 class Lesser(Operation):
     def solve(self, data):
+        a = self.a.solve(data)
+        b = self.b.solve(data)
         try:
-            a = self.a.solve(data)
-            b = self.b.solve(data)
             if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
                 return all(self.solve_list_number(data, lambda x, y: x < y))
-
             return a < b
         except TypeError:
-            return Set(self.a.solve(data)) < Set(self.b.solve(data))
+            return Set(a) < Set(b)
 
     def __repr__(self):
         return f"{self.a} < {self.b}"
@@ -243,10 +254,12 @@ class GreaterEq(Operation):
     def solve(self, data):
         a = self.a.solve(data)
         b = self.b.solve(data)
-        if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
-            return all(self.solve_list_number(data, lambda x, y: x >= y))
-
-        return a >= b
+        try:
+            if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
+                return all(self.solve_list_number(data, lambda x, y: x >= y))
+            return a >= b
+        except TypeError:
+            return Set(a) >= Set(b)
 
     def __repr__(self):
         return f"{self.a} \\geq {self.b}"
@@ -254,15 +267,14 @@ class GreaterEq(Operation):
 
 class LesserEq(Operation):
     def solve(self, data):
+        a = self.a.solve(data)
+        b = self.b.solve(data)
         try:
-            a = self.a.solve(data)
-            b = self.b.solve(data)
             if isinstance(a, (mList, Set, set)) and isinstance(b, (int, float)):
                 return all(self.solve_list_number(data, lambda x, y: x <= y))
-
             return a <= b
         except TypeError:
-            return Set(self.a.solve(data)) <= Set(self.b.solve(data))
+            return Set(a) <= Set(b)
 
     def __repr__(self):
         return f"{self.a} \\leq {self.b}"
@@ -446,7 +458,13 @@ class Cardinality(UnaryFunction):
 
 class Sumatory(UnaryFunction):
     def solve(self, data):
-        return sum(self.a.solve(data))
+        a = self.a.solve(data)
+        if len(a) > 0:
+            if type(a[0]) == mList:
+                return mList(map(lambda x: sum(x), a))
+            else:
+                return sum(a)
+        return 0
 
     def __repr__(self):
         return f"\\Sigma{{({self.a})}}"

@@ -85,4 +85,26 @@ module.exports = {
       return;
     }
   },
+  registeredOnly: async (req, res, next) => {
+    const token = req.header("Authorization");
+    if (!token) {
+      res.status(401).end();
+      return;
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_KEY);
+      const id = await model.getUserId(decoded.username);
+      if (!id) {
+        res.status(401).end();
+        return;
+      }
+      req.userId = id;
+      req.role = decoded.role;
+      next();
+    } catch (error) {
+      utils.handleError(error);
+      res.status(400).end();
+      return;
+    }
+  },
 };

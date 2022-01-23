@@ -108,7 +108,9 @@ module.exports = {
 
   fetchTenders: async (req, res) => {
     tcWrapper(async () => {
-      const data = await model.getTenders(req.userId);
+      const data = await model.getTenders(
+        req.role === "REVIEWER" ? req.userId : null
+      );
       res.status(200).json({ status: 200, tenders: data });
     }, res);
   },
