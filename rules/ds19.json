@@ -1585,7 +1585,7 @@
   {
     "name": "Puertas: ancho de puertas exteriores",
     "description": "Puertas exteriores aseguran un paso libre mínimo de 75cm",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.75)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.75)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1619,6 +1619,13 @@
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
             "attribute": "PanelDepth",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "TYPE",
+            "type": "PSET_QTO",
+            "pset": "IfcDoorLiningProperties",
+            "attribute": "LiningThickness",
             "operation": "EXISTS"
           },
           {
@@ -1659,7 +1666,7 @@
   {
     "name": "Puertas: ancho de puertas interiores",
     "description": "Puertas interiores aseguran un paso libre mínimo de 65cm",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.65)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.65)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1693,6 +1700,13 @@
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
             "attribute": "PanelDepth",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "TYPE",
+            "type": "PSET_QTO",
+            "pset": "IfcDoorLiningProperties",
+            "attribute": "LiningThickness",
             "operation": "EXISTS"
           },
           {
@@ -2479,7 +2493,7 @@
   {
     "name": "Accesibilidad universal: puerta de acceso",
     "description": "Puertas exteriores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.8)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -2513,6 +2527,13 @@
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
             "attribute": "PanelDepth",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "TYPE",
+            "type": "PSET_QTO",
+            "pset": "IfcDoorLiningProperties",
+            "attribute": "LiningThickness",
             "operation": "EXISTS"
           },
           {
@@ -2553,7 +2574,7 @@
   {
     "name": "Accesibilidad universal: puertas interiores",
     "description": "Puertas interiores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] >= 0.8)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -2587,6 +2608,13 @@
             "type": "PSET_QTO",
             "pset": "IfcDoorPanelProperties",
             "attribute": "PanelDepth",
+            "operation": "EXISTS"
+          },
+          {
+            "on": "TYPE",
+            "type": "PSET_QTO",
+            "pset": "IfcDoorLiningProperties",
+            "attribute": "LiningThickness",
             "operation": "EXISTS"
           },
           {
