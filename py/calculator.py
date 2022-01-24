@@ -389,7 +389,7 @@ class Then(BinaryFunction):
 class LogicalMatrixIn(BinaryFunction):
     def solve(self, data):
         b = self.b.solve(data)
-        return mList(map(lambda x: x in b, self.a.solve(data)))
+        return mList(a in b for a in self.a.solve(data))
 
     def __repr__(self):
         return f"({self.a} \\ \\in \\  {self.b})"
@@ -400,27 +400,12 @@ class LogicalMatrixCross(BinaryFunction):
         b = self.b.solve(data)
         c = mList()
         for a in self.a.solve(data):
-            c.append(mList(map(lambda x: x == a, b)))
+            c.append(mList(x == a for x in b))
 
         return c
 
     def __repr__(self):
         return f"({self.a} \\ \\times \\  {self.b})"
-
-
-class As(BinaryFunction):
-    def solve(self, data):
-        for a, b in zip(self.a.solve(data), self.b.solve(data)):
-            t = []
-            for x, y in zip(a, b):
-                t.append(x and y)
-
-            if t != b:
-                return False
-        return True
-
-    def __repr__(self):
-        return f"{{{self.a} \\ \\sim \\  {self.b}}}"
 
 
 class Multiply(BinaryFunction):
@@ -461,7 +446,7 @@ class Sumatory(UnaryFunction):
         a = self.a.solve(data)
         if len(a) > 0:
             if type(a[0]) == mList:
-                return mList(map(lambda x: sum(x), a))
+                return mList(sum(x) for x in a)
             else:
                 return sum(a)
         return 0
@@ -487,7 +472,7 @@ class Distance(UnaryFunction):
 class Map(BinaryFunction):
     def solve(self, data):
         f = filter(lambda x: bool(x[1]), zip(self.a.solve(data), self.b.solve(data)))
-        return mList(map(lambda x: x[0], f))
+        return mList(x[0] for x in f)
 
     def __repr__(self):
         return f"({self.a} \\ : \\  {self.b})"
@@ -721,7 +706,6 @@ class Calculator:
             [" and ", And],
             [" then ", Then],
             [" in ", LogicalMatrixIn],
-            [" as ", As],
             [" x ", LogicalMatrixCross],
             [" * ", Multiply]
         ]
