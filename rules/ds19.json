@@ -1409,7 +1409,6 @@
     "name": "Escaleras: ancho libre",
     "description": "Ancho libre útil de 70cm sin considerar pasamanos.",
     "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (#p0[Width] - (#p1[Diameter] * (#p1[Name] x #p0[Name])) >= 0.7)",
-    "display": "#p1[Diameter] * (#p1[Name] x #p0[Name])",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
