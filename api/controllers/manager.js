@@ -1,4 +1,5 @@
-var exec = require("child_process").execSync;
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 const model = require("../models/manager.js");
 const utils = require("../utils");
 
@@ -43,10 +44,10 @@ module.exports = {
     const formula = req.body.formula;
 
     tcWrapper(async () => {
-      const buffer = exec(
+      const { stdout } = await exec(
         `python3 ${__dirname}/../../py/formula_parser.py "${formula}"`
       );
-      res.status(200).json({ status: 200, latex: buffer.toString() });
+      res.status(200).json({ status: 200, latex: stdout });
     }, res);
   },
 

@@ -1,4 +1,5 @@
-var exec = require("child_process").execSync;
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 const model = require("../models/storage.js");
 const utils = require("../utils");
 
@@ -46,7 +47,7 @@ module.exports = {
       });
       await file.mv(`${path}/${id}/${file.name}`);
       if (zipped) {
-        exec(
+        await exec(
           `unzip -p ${path}/${id}/${file.name} > ${filename}.ifc && rm -f ${file.name}`
         );
       }
@@ -71,7 +72,7 @@ module.exports = {
     tcWrapper(async () => {
       await model.deleteFile(req.params.file);
       const path = `${__dirname}/../../files`;
-      exec(`rm -rf ${path}/${req.params.file}`);
+      await exec(`rm -rf ${path}/${req.params.file}`);
       res.status(200).json({ status: 200 });
     }, res);
   },
