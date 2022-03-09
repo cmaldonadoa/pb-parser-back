@@ -1,4 +1,5 @@
-var exec = require("child_process").execSync;
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 const storage = require("../models/storage.js");
 const manager = require("../models/manager.js");
 const parser = require("../models/parser.js");
@@ -22,7 +23,7 @@ module.exports = {
 
       for await (const groupId of groupIds) {
         const rules = await manager.getRulesByGroupFull(parseInt(groupId));
-        const buffer1 = exec(
+        const { stdout: stdout1 } = await exec(
           `python3 ${__dirname}/../../py/data_getter.py '${path}/${
             file.name
           }.ifc' '${JSON.stringify(
@@ -36,7 +37,7 @@ module.exports = {
 
         await parser.saveMetadata({
           fileId,
-          metadata: JSON.parse(buffer1.toString()),
+          metadata: JSON.parse(stdout1),
         });
 
         // Check intersections
@@ -46,11 +47,11 @@ module.exports = {
           .then((res) => res[0].name === "MEI");
         if (!isMEI) continue;
 
-        const buffer2 = exec(
+        const { stdout: stdout2 } = await exec(
           `python3 ${__dirname}/../../py/collision_checker.py '${path}/${file.name}.ifc'`
         );
 
-        const { intersections, duplicates } = JSON.parse(buffer2.toString());
+        const { intersections, duplicates } = JSON.parse(stdout2);
         for await (const intersection of intersections) {
           const [data1, data2] = intersection;
           const [type1, location1, guid1] = data1;
@@ -155,18 +156,18 @@ module.exports = {
 
           const result = [];
 
-          const buffer1 = exec(
+          const { stdout: stdout1 } = await exec(
             `python3 ${__dirname}/../../py/data_checker.py '${formula}' '${metastr}' '${mapstr}' '${varstr}'`
           );
-          const result1 = JSON.parse(buffer1.toString());
+          const result1 = JSON.parse(stdout1);
           result.push(result1);
 
           if (!!display) {
-            const buffer2 = exec(
+            const { stdout: stdout2 } = await exec(
               `python3 ${__dirname}/../../py/data_checker.py '${display}' '${metastr}' '${mapstr}' '${varstr}'`
             );
 
-            const result2 = JSON.parse(buffer2.toString());
+            const result2 = JSON.parse(stdout2);
             result.push(result2);
           } else {
             result.push(null);
