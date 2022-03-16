@@ -28,7 +28,7 @@ class BinaryFunction(ISolver):
         self.b = b
 
 
-class Operation (BinaryFunction):
+class Operation(BinaryFunction):
     def solve_list_number(self, data, fn):
         A = self.a.solve(data)
         B = self.b.solve(data)
@@ -395,17 +395,53 @@ class LogicalMatrixIn(BinaryFunction):
         return f"({self.a} \\ \\in \\  {self.b})"
 
 
-class LogicalMatrixCross(BinaryFunction):
-    def solve(self, data):
+class LogicalMatrixWildcard(BinaryFunction):
+    def _solve(self, data, fn):
         b = self.b.solve(data)
         c = mList()
         for a in self.a.solve(data):
-            c.append(mList(x == a for x in b))
-
+            c.append(mList(fn(a, x) for x in b))
         return c
 
+
+class LogicalMatrixCrossEqual(LogicalMatrixWildcard):
+    def solve(self, data):
+        return self._solve(data, lambda x, a: x == a)
+
     def __repr__(self):
-        return f"({self.a} \\ \\times \\  {self.b})"
+        return f"({self.a} \\ \\times_{{=}} \\  {self.b})"
+
+
+class LogicalMatrixCrossGreaterEqual(LogicalMatrixWildcard):
+    def solve(self, data):
+        return self._solve(data, lambda x, a: x >= a)
+
+    def __repr__(self):
+        return f"({self.a} \\ \\times_{{\\geq}} \\  {self.b})"
+
+
+class LogicalMatrixCrossLesserEqual(LogicalMatrixWildcard):
+    def solve(self, data):
+        return self._solve(data, lambda x, a: x <= a)
+
+    def __repr__(self):
+        return f"({self.a} \\ \\times_{{\\leq}} \\  {self.b})"
+
+
+class LogicalMatrixCrossGreater(LogicalMatrixWildcard):
+    def solve(self, data):
+        return self._solve(data, lambda x, a: x > a)
+
+    def __repr__(self):
+        return f"({self.a} \\ \\times_{{>}} \\  {self.b})"
+
+
+class LogicalMatrixCrossLesser(LogicalMatrixWildcard):
+    def solve(self, data):
+        return self._solve(data, lambda x, a: x < a)
+
+    def __repr__(self):
+        return f"({self.a} \\ \\times_{{<}} \\  {self.b})"
 
 
 class Multiply(BinaryFunction):
@@ -491,7 +527,7 @@ class Max(UnaryFunction):
 
 # Main class
 class Calculator:
-    @staticmethod
+    @ staticmethod
     def _strip_parentheses(string):
 
         if not re.search('^\(.*\)$', string):
@@ -515,7 +551,7 @@ class Calculator:
         else:
             return string
 
-    @staticmethod
+    @ staticmethod
     def _parse_func(string):
 
         if not re.search('^\w+\(.*\)$', string):
@@ -546,7 +582,7 @@ class Calculator:
             "func": funcs[func]
         }
 
-    @staticmethod
+    @ staticmethod
     def _parse_internal_func(string):
 
         if not re.search('^#\w+\[.*\]$', string):
@@ -573,7 +609,7 @@ class Calculator:
             "func": re.findall(r'\w+(?=\[)', string[:l_pos + 1])[0]
         }
 
-    @staticmethod
+    @ staticmethod
     def _parse_internal_formula(set_name, string):
         string = Calculator._strip_parentheses(string)
 
@@ -596,7 +632,7 @@ class Calculator:
         # CASE INTERNAL OPERATION
         return Calculator._parse_internal_op(set_name, string)
 
-    @staticmethod
+    @ staticmethod
     def _parse_op(string, ops, parser_fn):
         def is_valid(arg):
             cond1 = arg.count("(") != arg.count(")")
@@ -671,7 +707,7 @@ class Calculator:
             else:
                 continue
 
-    @staticmethod
+    @ staticmethod
     def _parse_internal_op(set_name, string):
         ops = [
             [" = ", InEqual],
@@ -688,7 +724,7 @@ class Calculator:
 
         return Calculator._parse_op(string, ops, lambda x: Calculator._parse_internal_formula(set_name, x))
 
-    @staticmethod
+    @ staticmethod
     def _parse_external_op(string):
         ops = [
             [" = ", Equal],
@@ -706,13 +742,17 @@ class Calculator:
             [" and ", And],
             [" then ", Then],
             [" in ", LogicalMatrixIn],
-            [" x ", LogicalMatrixCross],
+            [" x= ", LogicalMatrixCrossEqual],
+            [" x>= ", LogicalMatrixCrossGreaterEqual],
+            [" x<= ", LogicalMatrixCrossLesserEqual],
+            [" x> ", LogicalMatrixCrossGreater],
+            [" x< ", LogicalMatrixCrossLesser],
             [" * ", Multiply]
         ]
 
         return Calculator._parse_op(string, ops, Calculator._parse_formula)
 
-    @staticmethod
+    @ staticmethod
     def _parse_formula(string):
         string = Calculator._strip_parentheses(string)
 
@@ -748,11 +788,11 @@ class Calculator:
         # CASE EXTERNAL OPERATION
         return Calculator._parse_external_op(string)
 
-    @staticmethod
+    @ staticmethod
     def solve(formula, data, metadata, variables):
         solver = Calculator.parse(formula)
         return solver.solve({"map": data, "meta": metadata, "vars": variables})
 
-    @staticmethod
+    @ staticmethod
     def parse(formula):
         return Calculator._parse_formula(formula)
