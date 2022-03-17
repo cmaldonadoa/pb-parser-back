@@ -1408,7 +1408,7 @@
   {
     "name": "Escaleras: ancho libre",
     "description": "Ancho libre útil de 70cm sin considerar pasamanos.",
-    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (#p0[Width] - (#p1[Diameter] * (#p1[Name] x #p0[Name])) >= 0.7)",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (#p0[Width] - (#p1[Diameter] * (#p1[Name] x= #p0[Name])) >= 0.7)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1454,7 +1454,7 @@
   {
     "name": "Escaleras: pasamanos",
     "description": "En escaleras interiores se debe considerar pasamanos, con desarrollo a lo largo de toda la escalera.",
-    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (sum(#p0[Name] x #p1[Name]) > 0) and ((#p0[Length] x #p1[Length]) = (#p0[Name] x #p1[Name]))",
+    "formula": "(count(#p0) > 0) and (count(#p1) > 0) and (sum(#p0[Name] x= #p1[Name]) > 0) and ((#p0[Length] x<= #p1[Length]) = (#p0[Name] x= #p1[Name]))",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1584,7 +1584,7 @@
   {
     "name": "Puertas: ancho de puertas exteriores",
     "description": "Puertas exteriores aseguran un paso libre mínimo de 75cm",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.75)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x= #p3)) * (#p1[FillsVoids] x= #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.75)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -1665,7 +1665,7 @@
   {
     "name": "Puertas: ancho de puertas interiores",
     "description": "Puertas interiores aseguran un paso libre mínimo de 65cm",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.65)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x= #p3)) * (#p1[FillsVoids] x= #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.65)",
     "buildingTypes": ["HOUSE", "APARTMENT"],
     "filters": [
       {
@@ -2492,7 +2492,7 @@
   {
     "name": "Accesibilidad universal: puerta de acceso",
     "description": "Puertas exteriores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x= #p3)) * (#p1[FillsVoids] x= #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
@@ -2573,7 +2573,7 @@
   {
     "name": "Accesibilidad universal: puertas interiores",
     "description": "Puertas interiores cuentan con un ancho libre mínimo de 80cm.",
-    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x #p3)) * (#p1[FillsVoids] x #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
+    "formula": "(count(#p0) > 0) and (#p0 = #p1) and ((#p3[Width] * (#p2[RelatingOpeningElement] x= #p3)) * (#p1[FillsVoids] x= #p2) - #p1[PanelDepth] - #p1[LiningThickness] >= 0.8)",
     "buildingTypes": ["APARTMENT"],
     "filters": [
       {
